@@ -45,7 +45,7 @@ type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Clients    map[*Client]bool
-	Broadcast  chan *Message
+	Broadcast  chan *Event
 }
 
 func NewPool() *Pool {
@@ -53,7 +53,7 @@ func NewPool() *Pool {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
-		Broadcast:  make(chan *Message),
+		Broadcast:  make(chan *Event),
 	}
 }
 
@@ -66,21 +66,24 @@ func (p *Pool) Start(ctx context.Context) {
 			p.Clients[client] = true
 		case client := <-p.Unregister:
 			delete(p.Clients, client)
-		case msg := <-p.Broadcast:
+		case event := <-p.Broadcast:
 			for client := range p.Clients {
 				go func(c *Client) {
 					select {
 					case <-ctx.Done():
 						return
-					case c.msgs <- msg:
+					case c.msgs <- event.Body:
 					}
 				}(client)
 			}
+
+			event.Consumed <- true
 		}
 	}
 }
 
 type GameServer struct {
+	engine      *Engine
 	connections *Pool
 	serveMux    http.ServeMux
 }
@@ -89,7 +92,11 @@ func NewGameServer(ctx context.Context) *GameServer {
 	pool := NewPool()
 	go pool.Start(ctx)
 
+	eng := NewEngine(pool.Broadcast)
+	defer eng.Start(ctx)
+
 	gs := &GameServer{
+		engine:      eng,
 		connections: pool,
 	}
 

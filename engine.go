@@ -8,16 +8,23 @@ import (
 	"time"
 )
 
+type Event struct {
+	Body     *Message
+	Consumed chan bool
+}
+
 type Engine struct {
 	ticker   *time.Ticker
 	sigusr1  chan os.Signal
 	isPaused bool
+	emitter  chan<- *Event
 }
 
-func NewEngine() *Engine {
+func NewEngine(emit chan<- *Event) *Engine {
 	return &Engine{
 		ticker:  time.NewTicker(time.Second * 5),
 		sigusr1: make(chan os.Signal, 1),
+		emitter: emit,
 	}
 }
 
@@ -41,6 +48,17 @@ func (e *Engine) Start(ctx context.Context) {
 			}
 
 			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
+
+			event := &Event{
+				Body: &Message{
+					Type: 1,
+					Body: "server tick: " + t.UTC().String(),
+				},
+				Consumed: make(chan bool),
+			}
+
+			e.emitter <- event
+			<-event.Consumed
 		}
 	}
 }
