@@ -11,10 +11,6 @@ import (
 	"github.com/coder/websocket"
 )
 
-const (
-	ClientMessageBuffer int = 32
-)
-
 type Client struct {
 	conn *websocket.Conn
 	pool *Pool
@@ -22,11 +18,6 @@ type Client struct {
 }
 
 func (c *Client) Read(ctx context.Context) {
-	defer func() {
-		c.pool.Unregister <- c
-		c.conn.CloseNow()
-	}()
-
 	for {
 		_, r, err := c.conn.Reader(ctx)
 		if err != nil {
