@@ -37,12 +37,12 @@ func NewGameServer(ctx context.Context) *GameServer {
 	return gs
 }
 
-func (gs *GameServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	gs.serveMux.ServeHTTP(w, r)
+func (server *GameServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	server.serveMux.ServeHTTP(w, r)
 }
 
-func (gs *GameServer) serveWS(w http.ResponseWriter, r *http.Request) {
-	err := gs.registerClient(r.Context(), w, r)
+func (server *GameServer) serveWS(w http.ResponseWriter, r *http.Request) {
+	err := server.registerClient(r.Context(), w, r)
 
 	if errors.Is(err, context.Canceled) {
 		return
@@ -59,7 +59,7 @@ func (gs *GameServer) serveWS(w http.ResponseWriter, r *http.Request) {
 }
 
 // registerClient registers the incoming websocket connection to the game server
-func (gs *GameServer) registerClient(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		return err
@@ -71,11 +71,11 @@ func (gs *GameServer) registerClient(ctx context.Context, w http.ResponseWriter,
 	}
 
 	defer func() {
-		gs.connections.Unregister <- c
+		server.connections.Unregister <- c
 		c.conn.CloseNow()
 	}()
 
-	gs.connections.Register <- c
+	server.connections.Register <- c
 
 	go c.Read(ctx)
 

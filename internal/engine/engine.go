@@ -25,22 +25,22 @@ func New(emit chan<- *valobj.Event) *GameEngine {
 	}
 }
 
-func (ge *GameEngine) Start(ctx context.Context) {
+func (engine *GameEngine) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ge.sigusr1:
-			ge.isPaused = !ge.isPaused
+		case <-engine.sigusr1:
+			engine.isPaused = !engine.isPaused
 
-			switch ge.isPaused {
+			switch engine.isPaused {
 			case true:
 				fmt.Fprint(os.Stdout, "server is paused...\n")
 			case false:
 				fmt.Fprint(os.Stdout, "server is resumed...\n")
 			}
-		case t := <-ge.ticker.C:
-			if ge.isPaused {
+		case t := <-engine.ticker.C:
+			if engine.isPaused {
 				break
 			}
 
@@ -54,7 +54,7 @@ func (ge *GameEngine) Start(ctx context.Context) {
 				Consumed: make(chan bool),
 			}
 
-			ge.emitter <- event
+			engine.emitter <- event
 			<-event.Consumed
 		}
 	}
