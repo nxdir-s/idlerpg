@@ -13,7 +13,6 @@ import (
 
 type Client struct {
 	conn *websocket.Conn
-	pool *Pool
 	msgs chan []byte
 }
 
@@ -124,7 +123,6 @@ func (gs *GameServer) registerClient(ctx context.Context, w http.ResponseWriter,
 
 	c := &Client{
 		conn: conn,
-		pool: gs.connections,
 		msgs: make(chan []byte),
 	}
 
