@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +14,7 @@ import (
 
 type Client struct {
 	conn *websocket.Conn
-	msgs chan []byte
+	msgs chan *Message
 }
 
 func (c *Client) Read(ctx context.Context) {
@@ -35,11 +36,16 @@ func (c *Client) Read(ctx context.Context) {
 	}
 }
 
+type Message struct {
+	Type int    `json:"type"`
+	Body string `json:"body"`
+}
+
 type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Clients    map[*Client]bool
-	Broadcast  chan []byte
+	Broadcast  chan *Message
 }
 
 func NewPool() *Pool {
@@ -47,7 +53,7 @@ func NewPool() *Pool {
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
-		Broadcast:  make(chan []byte),
+		Broadcast:  make(chan *Message),
 	}
 }
 
@@ -123,7 +129,7 @@ func (gs *GameServer) registerClient(ctx context.Context, w http.ResponseWriter,
 
 	c := &Client{
 		conn: conn,
-		msgs: make(chan []byte),
+		msgs: make(chan *Message),
 	}
 
 	defer func() {
@@ -140,7 +146,16 @@ func (gs *GameServer) registerClient(ctx context.Context, w http.ResponseWriter,
 		case <-ctx.Done():
 			return ctx.Err()
 		case msg := <-c.msgs:
-			if err := c.conn.Write(ctx, websocket.MessageBinary, msg); err != nil {
+			wc, err := c.conn.Writer(ctx, websocket.MessageBinary)
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "error getting connection writer: %s\n", err.Error())
+				return err
+			}
+
+			defer wc.Close()
+
+			err = json.NewEncoder(wc).Encode(msg)
+			if err != nil {
 				fmt.Fprintf(os.Stdout, "error sending message to client: %s\n", err.Error())
 				return err
 			}
