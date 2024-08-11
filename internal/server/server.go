@@ -1,89 +1,20 @@
-package main
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 
 	"github.com/coder/websocket"
+	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	"github.com/nxdir-s/IdleRpg/internal/engine"
 )
 
-type Client struct {
-	conn *websocket.Conn
-	msgs chan *Message
-}
-
-func (c *Client) Read(ctx context.Context) {
-	for {
-		_, r, err := c.conn.Reader(ctx)
-		if err != nil {
-			fmt.Fprintf(os.Stdout, "error getting reader from connection: %s\n", err.Error())
-			return
-		}
-
-		var msg []byte
-		msg, err = io.ReadAll(r)
-		if err != nil {
-			fmt.Fprintf(os.Stdout, "error reading message: %s\n", err.Error())
-			return
-		}
-
-		fmt.Fprintf(os.Stdout, "Recieved Message: %s\n", string(msg))
-	}
-}
-
-type Message struct {
-	Type int    `json:"type"`
-	Body string `json:"body"`
-}
-
-type Pool struct {
-	Register   chan *Client
-	Unregister chan *Client
-	Clients    map[*Client]bool
-	Broadcast  chan *Event
-}
-
-func NewPool() *Pool {
-	return &Pool{
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Clients:    make(map[*Client]bool),
-		Broadcast:  make(chan *Event),
-	}
-}
-
-func (p *Pool) Start(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case client := <-p.Register:
-			p.Clients[client] = true
-		case client := <-p.Unregister:
-			delete(p.Clients, client)
-		case event := <-p.Broadcast:
-			for client := range p.Clients {
-				go func(c *Client) {
-					select {
-					case <-ctx.Done():
-						return
-					case c.msgs <- event.Body:
-					}
-				}(client)
-			}
-
-			event.Consumed <- true
-		}
-	}
-}
-
 type GameServer struct {
-	engine      *Engine
+	engine      *engine.GameEngine
 	connections *Pool
 	serveMux    http.ServeMux
 }
@@ -92,7 +23,7 @@ func NewGameServer(ctx context.Context) *GameServer {
 	pool := NewPool()
 	go pool.Start(ctx)
 
-	eng := NewEngine(pool.Broadcast)
+	eng := engine.New(pool.Broadcast)
 	defer eng.Start(ctx)
 
 	gs := &GameServer{
@@ -136,7 +67,7 @@ func (gs *GameServer) registerClient(ctx context.Context, w http.ResponseWriter,
 
 	c := &Client{
 		conn: conn,
-		msgs: make(chan *Message),
+		msgs: make(chan *valobj.Message),
 	}
 
 	defer func() {

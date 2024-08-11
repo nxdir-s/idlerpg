@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/nxdir-s/IdleRpg/internal/server"
 )
 
 type ArgError struct{}
@@ -33,7 +35,7 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "listening on ws://%v\n", listener.Addr())
 
-	gs := NewGameServer(ctx)
+	gs := server.NewGameServer(ctx)
 	server := &http.Server{
 		Handler:      gs,
 		ReadTimeout:  time.Second * 10,
