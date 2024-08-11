@@ -81,8 +81,8 @@ func (p *Pool) Start(ctx context.Context) {
 }
 
 type GameServer struct {
-	serveMux    http.ServeMux
 	connections *Pool
+	serveMux    http.ServeMux
 }
 
 func NewGameServer(ctx context.Context) *GameServer {
