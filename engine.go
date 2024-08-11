@@ -31,9 +31,9 @@ func (e *Engine) Start(ctx context.Context) {
 
 			switch e.isPaused {
 			case true:
-				fmt.Fprint(os.Stdout, "game engine is paused...\n")
+				fmt.Fprint(os.Stdout, "server is paused...\n")
 			case false:
-				fmt.Fprint(os.Stdout, "game engine is resumed...\n")
+				fmt.Fprint(os.Stdout, "server is resumed...\n")
 			}
 		case t := <-e.ticker.C:
 			if e.isPaused {
