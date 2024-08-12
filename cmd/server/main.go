@@ -13,6 +13,10 @@ import (
 	"github.com/nxdir-s/IdleRpg/internal/server"
 )
 
+const (
+	DefaultAddr string = "0.0.0.0:3000"
+)
+
 type ArgError struct{}
 
 func (e ArgError) Error() string {
@@ -23,12 +27,8 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	if len(os.Args) < 2 {
-		log.Fatal(ArgError{})
-	}
-
 	var lc net.ListenConfig
-	listener, err := lc.Listen(ctx, "tcp", os.Args[1])
+	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
