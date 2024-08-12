@@ -24,7 +24,9 @@ func NewGameServer(ctx context.Context) *GameServer {
 	go pool.Start(ctx)
 
 	ngin := engine.New(pool.Broadcast)
-	defer ngin.Start(ctx)
+	defer func() {
+		go ngin.Start(ctx)
+	}()
 
 	gs := &GameServer{
 		engine:      ngin,
@@ -42,6 +44,7 @@ func (server *GameServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *GameServer) serveWS(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(os.Stdout, "recieved new client connection...\n")
 	err := server.registerClient(r.Context(), w, r)
 
 	if errors.Is(err, context.Canceled) {
@@ -84,17 +87,25 @@ func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWri
 		case <-ctx.Done():
 			return ctx.Err()
 		case msg := <-c.msgs:
+			fmt.Fprintf(os.Stdout, "recieved message, getting connection writer...\n")
+
 			wr, err := c.conn.Writer(ctx, websocket.MessageText)
 			if err != nil {
 				fmt.Fprintf(os.Stdout, "error getting connection writer: %s\n", err.Error())
 				return err
 			}
 
-			defer wr.Close()
+			fmt.Fprintf(os.Stdout, "preparing to send message...\n")
 
 			err = json.NewEncoder(wr).Encode(msg)
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "error sending message to client: %s\n", err.Error())
+				fmt.Fprintf(os.Stdout, "error encoding message: %s\n", err.Error())
+				return err
+			}
+
+			err = wr.Close()
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "error closing connection writer: %s\n", err.Error())
 				return err
 			}
 		}
