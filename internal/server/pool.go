@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"time"
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 )
@@ -33,13 +36,15 @@ func (p *Pool) Start(ctx context.Context) {
 			delete(p.Clients, client)
 		case event := <-p.Broadcast:
 			for client := range p.Clients {
-				go func(c *Client) {
+				go func(c *Client, e *valobj.Event) {
 					select {
 					case <-ctx.Done():
 						return
-					case c.msgs <- event.Body:
+					case c.msgs <- e.Body:
+					case <-time.After(3 * time.Second):
+						fmt.Fprintf(os.Stdout, "client too slow, dropping event...")
 					}
-				}(client)
+				}(client, event)
 			}
 
 			event.Consumed <- true

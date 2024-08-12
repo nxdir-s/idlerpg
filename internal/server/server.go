@@ -23,11 +23,11 @@ func NewGameServer(ctx context.Context) *GameServer {
 	pool := NewPool()
 	go pool.Start(ctx)
 
-	eng := engine.New(pool.Broadcast)
-	defer eng.Start(ctx)
+	ngin := engine.New(pool.Broadcast)
+	defer ngin.Start(ctx)
 
 	gs := &GameServer{
-		engine:      eng,
+		engine:      ngin,
 		connections: pool,
 	}
 
@@ -84,15 +84,15 @@ func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWri
 		case <-ctx.Done():
 			return ctx.Err()
 		case msg := <-c.msgs:
-			wc, err := c.conn.Writer(ctx, websocket.MessageBinary)
+			wr, err := c.conn.Writer(ctx, websocket.MessageText)
 			if err != nil {
 				fmt.Fprintf(os.Stdout, "error getting connection writer: %s\n", err.Error())
 				return err
 			}
 
-			defer wc.Close()
+			defer wr.Close()
 
-			err = json.NewEncoder(wc).Encode(msg)
+			err = json.NewEncoder(wr).Encode(msg)
 			if err != nil {
 				fmt.Fprintf(os.Stdout, "error sending message to client: %s\n", err.Error())
 				return err

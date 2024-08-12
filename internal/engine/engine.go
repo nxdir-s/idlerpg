@@ -1,6 +1,6 @@
+// SIGUSR1 toggles the engine pausing/running
 package engine
 
-// SIGUSR1 toggles the engine pausing/running
 import (
 	"context"
 	"fmt"

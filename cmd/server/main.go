@@ -51,10 +51,10 @@ func main() {
 	}()
 
 	select {
-	case err := <-errChan:
-		fmt.Fprintf(os.Stdout, "failed to serve: %+v\n", err)
 	case <-ctx.Done():
 		fmt.Fprintf(os.Stdout, "context canceled: %+v\n", ctx.Err())
+	case err := <-errChan:
+		fmt.Fprintf(os.Stdout, "failed to serve: %+v\n", err)
 	}
 
 	ctx, timeout := context.WithTimeout(ctx, time.Second*10)
