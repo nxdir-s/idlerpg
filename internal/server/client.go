@@ -16,6 +16,7 @@ type Client struct {
 	msgs chan *valobj.Message
 }
 
+// Read waits for client events and notifies the game server
 func (c *Client) Read(ctx context.Context, pool *Pool) {
 	defer func() {
 		pool.Unregister <- c
@@ -25,7 +26,7 @@ func (c *Client) Read(ctx context.Context, pool *Pool) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Fprintf(os.Stdout, "recieve done signal: %v\n", ctx.Err())
+			fmt.Fprintf(os.Stdout, "recieved done signal: %v\n", ctx.Err())
 			return
 		default:
 			_, r, err := c.conn.Reader(ctx)
@@ -42,6 +43,8 @@ func (c *Client) Read(ctx context.Context, pool *Pool) {
 			}
 
 			fmt.Fprintf(os.Stdout, "Recieved Message: %s\n", string(msg))
+
+			// TODO: implement notifying game server
 		}
 	}
 }
