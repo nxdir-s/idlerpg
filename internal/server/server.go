@@ -72,14 +72,9 @@ func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWri
 		msgs: make(chan *valobj.Message),
 	}
 
-	defer func() {
-		server.connections.Unregister <- c
-		c.conn.CloseNow()
-	}()
-
 	server.connections.Register <- c
 
-	go c.Read(ctx)
+	go c.Read(ctx, server.connections)
 
 	return c.Listen(ctx)
 }

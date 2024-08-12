@@ -16,7 +16,12 @@ type Client struct {
 	msgs chan *valobj.Message
 }
 
-func (c *Client) Read(ctx context.Context) {
+func (c *Client) Read(ctx context.Context, pool *Pool) {
+	defer func() {
+		pool.Unregister <- c
+		c.conn.CloseNow()
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
