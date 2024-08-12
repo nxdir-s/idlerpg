@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -82,32 +81,5 @@ func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWri
 
 	go c.Read(ctx)
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case msg := <-c.msgs:
-			fmt.Fprintf(os.Stdout, "recieved message, getting connection writer...\n")
-
-			wr, err := c.conn.Writer(ctx, websocket.MessageText)
-			if err != nil {
-				fmt.Fprintf(os.Stdout, "error getting connection writer: %s\n", err.Error())
-				return err
-			}
-
-			fmt.Fprintf(os.Stdout, "preparing to send message...\n")
-
-			err = json.NewEncoder(wr).Encode(msg)
-			if err != nil {
-				fmt.Fprintf(os.Stdout, "error encoding message: %s\n", err.Error())
-				return err
-			}
-
-			err = wr.Close()
-			if err != nil {
-				fmt.Fprintf(os.Stdout, "error closing connection writer: %s\n", err.Error())
-				return err
-			}
-		}
-	}
+	return c.Listen(ctx)
 }
