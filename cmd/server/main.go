@@ -45,7 +45,7 @@ func main() {
 		},
 	}
 
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
 		fmt.Fprint(os.Stdout, "starting server...\n")
 		errChan <- server.Serve(listener)
