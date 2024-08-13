@@ -9,21 +9,21 @@ import (
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/pool"
+	"github.com/nxdir-s/pipelines"
 )
 
 type GameEngine struct {
 	ticker      *time.Ticker
 	sigusr1     chan os.Signal
 	isPaused    bool
-	emitter     chan<- *valobj.Event
 	connections *pool.Pool
 }
 
-func New(emit chan<- *valobj.Event) *GameEngine {
+func New(pool *pool.Pool) *GameEngine {
 	return &GameEngine{
-		ticker:  time.NewTicker(time.Second * 5),
-		sigusr1: make(chan os.Signal, 1),
-		emitter: emit,
+		ticker:      time.NewTicker(time.Second * 5),
+		sigusr1:     make(chan os.Signal, 1),
+		connections: pool,
 	}
 }
 
@@ -48,6 +48,13 @@ func (engine *GameEngine) Start(ctx context.Context) {
 
 			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
 
+			reply := make(chan *pool.Snapshot)
+			engine.connections.Snapshot <- reply
+
+			snapshot := <-reply
+
+			// process/simulate actions
+
 			event := &valobj.Event{
 				Body: &valobj.Message{
 					Type: 1,
@@ -56,8 +63,22 @@ func (engine *GameEngine) Start(ctx context.Context) {
 				Consumed: make(chan bool),
 			}
 
-			engine.emitter <- event
+			engine.connections.Broadcast <- event
 			<-event.Consumed
 		}
 	}
+}
+
+func (engine *GameEngine) process(players map[*pool.Client]bool) {
+	// 1. Loop through players
+	// 2. Simulate their actions
+	//      1. For ex. player is fighting mob, their action is Fight
+	//      2. The Fight action generates exp and random loot
+	//      3. The random loot and other unknowns need to be simulated
+	// 3. Run each simulation in go routine and send results to channel for batch save to db
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	playerStream := pipelines.StreamMap[*pool.Client](ctx, players)
+	// fanOut := pipelines.FanOut(ctx, playerStream, )
 }

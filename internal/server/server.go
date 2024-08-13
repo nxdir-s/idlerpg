@@ -23,7 +23,7 @@ func NewGameServer(ctx context.Context) *GameServer {
 	pool := pool.NewPool()
 	go pool.Start(ctx)
 
-	ngin := engine.New(pool.Broadcast)
+	ngin := engine.New(pool)
 	defer func() {
 		go ngin.Start(ctx)
 	}()

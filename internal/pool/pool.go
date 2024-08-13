@@ -28,6 +28,7 @@ func NewPool() *Pool {
 		Unregister: make(chan *Client),
 		Clients:    make(map[*Client]bool),
 		Broadcast:  make(chan *valobj.Event),
+		Snapshot:   make(chan chan *Snapshot),
 	}
 }
 
@@ -58,18 +59,9 @@ func (p *Pool) Start(ctx context.Context) {
 				case <-ctx.Done():
 					return
 				case client.msgs <- event.Body:
-				case <-time.After(5 * time.Second):
+				case <-time.After(80 * time.Millisecond):
 					fmt.Fprint(os.Stdout, "client too slow, dropping event...\n")
 				}
-				// go func(c *Client, e *valobj.Event) {
-				// 	select {
-				// 	case <-ctx.Done():
-				// 		return
-				// 	case c.msgs <- e.Body:
-				// 	case <-time.After(5 * time.Second):
-				// 		fmt.Fprint(os.Stdout, "client too slow, dropping event...\n")
-				// 	}
-				// }(client, event)
 			}
 
 			event.Consumed <- true

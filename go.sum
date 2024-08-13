@@ -1,2 +1,4 @@
 github.com/coder/websocket v1.8.12 h1:5bUXkEPPIbewrnkU8LTCLVaxi4N4J8ahufH2vlo4NAo=
 github.com/coder/websocket v1.8.12/go.mod h1:LNVeNrXQZfe5qhS9ALED3uA+l5pPqvwXg3CKoDBB2gs=
+github.com/nxdir-s/pipelines v0.0.1 h1:qTdMRz6nZCpo7u6yZLd/jI3JyHurgV0Yo9azCVXmjuI=
+github.com/nxdir-s/pipelines v0.0.1/go.mod h1:w6OW05yULAttmm2bRq34nhaM8Qt3Div5keW2rY2OsAU=
