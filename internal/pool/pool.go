@@ -1,4 +1,4 @@
-package server
+package pool
 
 import (
 	"context"
@@ -14,6 +14,12 @@ type Pool struct {
 	Unregister chan *Client
 	Clients    map[*Client]bool
 	Broadcast  chan *valobj.Event
+	Snapshot   chan chan *Snapshot
+}
+
+type Snapshot struct {
+	Clients   map[*Client]bool
+	Processed chan bool
 }
 
 func NewPool() *Pool {
@@ -36,6 +42,14 @@ func (p *Pool) Start(ctx context.Context) {
 		case client := <-p.Unregister:
 			fmt.Fprint(os.Stdout, "removing client from pool...\n")
 			delete(p.Clients, client)
+		case req := <-p.Snapshot:
+			s := &Snapshot{
+				Clients:   p.Clients,
+				Processed: make(chan bool),
+			}
+
+			req <- s
+			<-s.Processed
 		case event := <-p.Broadcast:
 			fmt.Fprintf(os.Stdout, "recieved event to broadcast: %s\n", event.Body.Body)
 

@@ -10,16 +10,17 @@ import (
 	"github.com/coder/websocket"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
+	"github.com/nxdir-s/IdleRpg/internal/pool"
 )
 
 type GameServer struct {
 	engine      *engine.GameEngine
-	connections *Pool
+	connections *pool.Pool
 	serveMux    http.ServeMux
 }
 
 func NewGameServer(ctx context.Context) *GameServer {
-	pool := NewPool()
+	pool := pool.NewPool()
 	go pool.Start(ctx)
 
 	ngin := engine.New(pool.Broadcast)

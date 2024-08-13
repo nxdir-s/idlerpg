@@ -8,13 +8,15 @@ import (
 	"time"
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	"github.com/nxdir-s/IdleRpg/internal/pool"
 )
 
 type GameEngine struct {
-	ticker   *time.Ticker
-	sigusr1  chan os.Signal
-	isPaused bool
-	emitter  chan<- *valobj.Event
+	ticker      *time.Ticker
+	sigusr1     chan os.Signal
+	isPaused    bool
+	emitter     chan<- *valobj.Event
+	connections *pool.Pool
 }
 
 func New(emit chan<- *valobj.Event) *GameEngine {
