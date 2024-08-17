@@ -8,19 +8,21 @@ import (
 	"os"
 
 	"github.com/coder/websocket"
+	"github.com/nxdir-s/IdleRpg/internal/core/entity/player"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 )
 
 type Client struct {
-	conn *websocket.Conn
-	msgs chan *valobj.Message
+	Conn   *websocket.Conn
+	Msgs   chan *valobj.Message
+	Player *player.Player
 }
 
 // Read waits for client events and notifies the game server
 func (c *Client) Read(ctx context.Context, pool *Pool) {
 	defer func() {
 		pool.Unregister <- c
-		c.conn.CloseNow()
+		c.Conn.CloseNow()
 	}()
 
 	for {
@@ -29,7 +31,7 @@ func (c *Client) Read(ctx context.Context, pool *Pool) {
 			fmt.Fprintf(os.Stdout, "recieved done signal: %v\n", ctx.Err())
 			return
 		default:
-			_, r, err := c.conn.Reader(ctx)
+			_, r, err := c.Conn.Reader(ctx)
 			if err != nil {
 				fmt.Fprintf(os.Stdout, "error getting reader from connection: %s\n", err.Error())
 				return
@@ -55,10 +57,10 @@ func (c Client) Listen(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case msg := <-c.msgs:
+		case msg := <-c.Msgs:
 			fmt.Fprintf(os.Stdout, "recieved message, getting connection writer...\n")
 
-			wr, err := c.conn.Writer(ctx, websocket.MessageText)
+			wr, err := c.Conn.Writer(ctx, websocket.MessageText)
 			if err != nil {
 				fmt.Fprintf(os.Stdout, "error getting connection writer: %s\n", err.Error())
 				return err

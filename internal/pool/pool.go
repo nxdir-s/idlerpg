@@ -58,7 +58,7 @@ func (p *Pool) Start(ctx context.Context) {
 				select {
 				case <-ctx.Done():
 					return
-				case client.msgs <- event.Body:
+				case client.Msgs <- event.Body:
 				case <-time.After(80 * time.Millisecond):
 					fmt.Fprint(os.Stdout, "client too slow, dropping event...\n")
 				}

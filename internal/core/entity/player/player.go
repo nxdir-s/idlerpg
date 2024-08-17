@@ -6,6 +6,6 @@ type Player struct {
 	Action actions.Action
 }
 
-func New() (*Player, error) {
-	return &Player{}, nil
+func New() *Player {
+	return &Player{}
 }

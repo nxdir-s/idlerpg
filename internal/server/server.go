@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/coder/websocket"
+	"github.com/nxdir-s/IdleRpg/internal/core/entity/player"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
 	"github.com/nxdir-s/IdleRpg/internal/pool"
@@ -19,18 +20,15 @@ type GameServer struct {
 	serveMux    http.ServeMux
 }
 
-func NewGameServer(ctx context.Context) *GameServer {
-	pool := pool.NewPool()
-	go pool.Start(ctx)
-
-	ngin := engine.New(pool)
+func NewGameServer(ctx context.Context, pl *pool.Pool, ngin *engine.GameEngine) *GameServer {
 	defer func() {
 		go ngin.Start(ctx)
 	}()
+	go pl.Start(ctx)
 
 	gs := &GameServer{
 		engine:      ngin,
-		connections: pool,
+		connections: pl,
 	}
 
 	gs.serveMux.Handle("/", http.FileServer(http.Dir(".")))
@@ -68,9 +66,10 @@ func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWri
 		return err
 	}
 
-	c := &Client{
-		conn: conn,
-		msgs: make(chan *valobj.Message),
+	c := &pool.Client{
+		Conn:   conn,
+		Msgs:   make(chan *valobj.Message),
+		Player: player.New(),
 	}
 
 	server.connections.Register <- c

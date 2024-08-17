@@ -8,8 +8,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
+	"github.com/nxdir-s/IdleRpg/internal/adapters/secondary"
+	"github.com/nxdir-s/IdleRpg/internal/engine"
+	"github.com/nxdir-s/IdleRpg/internal/pool"
+	"github.com/nxdir-s/IdleRpg/internal/ports"
 	"github.com/nxdir-s/IdleRpg/internal/server"
 )
 
@@ -35,7 +40,30 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "listening on ws://%v\n", listener.Addr())
 
-	gs := server.NewGameServer(ctx)
+	brokerStr := os.Getenv("BROKERS")
+	if brokerStr == "" {
+		fmt.Fprint(os.Stdout, "found empty string for BROKERS\n")
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
+
+	brokers := strings.Split(brokerStr, ",")
+
+	var kafkaAdapter ports.KafkaPort
+	kafkaAdapter, err = secondary.NewSaramaAdapter(brokers)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create kafka adapter: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer kafkaAdapter.Close()
+
+	pool := pool.NewPool()
+	ngin := engine.New(pool, kafkaAdapter)
+
+	gs := server.NewGameServer(ctx, pool, ngin)
+
 	server := &http.Server{
 		Handler:      gs,
 		ReadTimeout:  time.Second * 10,
