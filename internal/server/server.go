@@ -11,7 +11,7 @@ import (
 	"github.com/nxdir-s/IdleRpg/internal/core/entity/player"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
-	"github.com/nxdir-s/IdleRpg/internal/pool"
+	"github.com/nxdir-s/IdleRpg/internal/server/pool"
 )
 
 type GameServer struct {

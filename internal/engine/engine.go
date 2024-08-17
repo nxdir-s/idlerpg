@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
-	"github.com/nxdir-s/IdleRpg/internal/pool"
 	"github.com/nxdir-s/IdleRpg/internal/ports"
+	"github.com/nxdir-s/IdleRpg/internal/server/pool"
 	"github.com/nxdir-s/pipelines"
 )
 
@@ -62,17 +62,9 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 
 			// process/simulate actions
 			go ngin.process(ctx, snapshot.Clients)
-
 			snapshot.Processed <- true
 
-			event := &valobj.Event{
-				Body: &valobj.Message{
-					Type: 1,
-					Body: "server tick: " + t.UTC().String(),
-				},
-				Consumed: make(chan bool),
-			}
-
+			event := ngin.buildEvent(t)
 			ngin.connections.Broadcast <- event
 			<-event.Consumed
 		}
@@ -85,7 +77,7 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 	//      1. For ex. player is fighting mob, their action is Fight
 	//      2. The Fight action generates exp and random loot
 	//      3. The random loot and other unknowns need to be simulated
-	// 3. Run each simulation in go routine and send results to channel for batch save to db
+	// 3. Run each simulation in go routine and send results to kafka
 	if len(players) == 0 {
 		fmt.Fprintf(os.Stdout, "%d players connected...\n", len(players))
 		return
@@ -116,4 +108,15 @@ func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *valo
 	return &valobj.PlayerEvent{
 		Action: int(client.Player.Action),
 	}
+}
+
+func (ngin *GameEngine) buildEvent(t time.Time) *valobj.Event {
+	return &valobj.Event{
+		Body: &valobj.Message{
+			Type: 1,
+			Body: "server tick: " + t.UTC().String(),
+		},
+		Consumed: make(chan bool),
+	}
+
 }

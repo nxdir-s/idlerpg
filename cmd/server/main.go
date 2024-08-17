@@ -13,9 +13,9 @@ import (
 
 	"github.com/nxdir-s/IdleRpg/internal/adapters/secondary"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
-	"github.com/nxdir-s/IdleRpg/internal/pool"
 	"github.com/nxdir-s/IdleRpg/internal/ports"
 	"github.com/nxdir-s/IdleRpg/internal/server"
+	"github.com/nxdir-s/IdleRpg/internal/server/pool"
 )
 
 const (
