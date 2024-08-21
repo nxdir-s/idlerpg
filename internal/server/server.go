@@ -17,7 +17,7 @@ import (
 type GameServer struct {
 	engine      *engine.GameEngine
 	connections *pool.Pool
-	serveMux    http.ServeMux
+	mux         http.ServeMux
 }
 
 func NewGameServer(ctx context.Context, pl *pool.Pool, ngin *engine.GameEngine) *GameServer {
@@ -31,19 +31,21 @@ func NewGameServer(ctx context.Context, pl *pool.Pool, ngin *engine.GameEngine) 
 		connections: pl,
 	}
 
-	gs.serveMux.Handle("/", http.FileServer(http.Dir(".")))
-	gs.serveMux.HandleFunc("/ws", gs.serveWS)
+	gs.mux.Handle("/", http.FileServer(http.Dir(".")))
+	gs.mux.HandleFunc("/ws", gs.serveWS)
 
 	return gs
 }
 
 func (server *GameServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	server.serveMux.ServeHTTP(w, r)
+	server.mux.ServeHTTP(w, r)
 }
 
 func (server *GameServer) serveWS(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(os.Stdout, "recieved new client connection...\n")
-	err := server.registerClient(r.Context(), w, r)
+
+	var err error
+	err = server.registerClient(r.Context(), w, r)
 
 	if errors.Is(err, context.Canceled) {
 		return
