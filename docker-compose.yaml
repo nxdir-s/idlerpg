@@ -14,6 +14,18 @@ services:
       - kafka-1
       - kafka-2
       - kafka-3
+
+  webserver:
+    image: idlerpg-web:latest
+    container_name: idlerpg-web
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    environment:
+      BROKERS: kafka-1:19092,kafka-2:19092,kafka-3:19092
+    depends_on:
+      - gameserver
+
   controller-1:
     image: apache/kafka:latest
     container_name: controller-1
