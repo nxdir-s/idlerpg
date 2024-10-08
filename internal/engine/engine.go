@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	MaxFan int = 3
+	SimulateMaxFan int = 3
+	KafkaMaxFan    int = 3
 )
 
 type GameEngine struct {
@@ -86,24 +87,23 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 	fmt.Fprintf(os.Stdout, "processings %d player actions...\n", len(players))
 
 	stream := pipelines.StreamMap(ctx, players)
-	fanOutChannels := pipelines.FanOut(ctx, stream, ngin.Simulate, MaxFan)
+	fanOutChannels := pipelines.FanOut(ctx, stream, ngin.Simulate, SimulateMaxFan)
 	playerEvents := pipelines.FanIn(ctx, fanOutChannels...)
 
-	for event := range playerEvents {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			err := ngin.kafka.SendPlayerEvent(ctx, event)
-			if err != nil {
-				fmt.Fprintf(os.Stdout, "error sending event: %s\n", err.Error())
-			}
+	kafkaFanOut := pipelines.FanOut(ctx, playerEvents, ngin.kafka.SendPlayerEvent, KafkaMaxFan)
+	errChan := pipelines.FanIn(ctx, kafkaFanOut...)
+
+	for err := range errChan {
+		if err != nil {
+			// TODO: figure out how to handle replays. Maybe dlq?
+			fmt.Fprintf(os.Stdout, "error sending player event: %s\n", err.Error())
 		}
 	}
 }
 
 func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *valobj.PlayerEvent {
-	fmt.Fprint(os.Stdout, "runing simulation...\n")
+	// TODO: implement this
+	fmt.Fprint(os.Stdout, "running simulation...\n")
 
 	return &valobj.PlayerEvent{
 		Action: int(client.Player.Action),
@@ -118,5 +118,4 @@ func (ngin *GameEngine) buildEvent(t time.Time) *valobj.Event {
 		},
 		Consumed: make(chan bool),
 	}
-
 }

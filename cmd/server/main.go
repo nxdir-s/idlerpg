@@ -22,12 +22,6 @@ const (
 	DefaultAddr string = "0.0.0.0:3000"
 )
 
-type ArgError struct{}
-
-func (e ArgError) Error() string {
-	return "please provide an address to listen on as the first argument"
-}
-
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
