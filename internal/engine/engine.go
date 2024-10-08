@@ -16,6 +16,8 @@ import (
 const (
 	SimulateMaxFan int = 3
 	KafkaMaxFan    int = 3
+
+	TickerInterval time.Duration = time.Second * 5
 )
 
 type GameEngine struct {
@@ -28,7 +30,7 @@ type GameEngine struct {
 
 func New(pool *pool.Pool, kafka ports.KafkaPort) *GameEngine {
 	return &GameEngine{
-		ticker:      time.NewTicker(time.Second * 5),
+		ticker:      time.NewTicker(TickerInterval),
 		sigusr1:     make(chan os.Signal, 1),
 		connections: pool,
 		kafka:       kafka,
