@@ -14,6 +14,7 @@ services:
       - kafka-1
       - kafka-2
       - kafka-3
+      - postgres
 
   webserver:
     image: idlerpg-web:latest
@@ -25,6 +26,21 @@ services:
       BROKERS: kafka-1:19092,kafka-2:19092,kafka-3:19092
     depends_on:
       - gameserver
+
+  database:
+    image: postgres:latest-alpine
+    container_name: postgres
+    restart: unless-stopped
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_PASSWORD: example
 
   controller-1:
     image: apache/kafka:latest

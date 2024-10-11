@@ -8,5 +8,5 @@ import (
 
 type KafkaPort interface {
 	SendPlayerEvent(ctx context.Context, event *valobj.PlayerEvent) error
-	Close() error
+	CloseProducer() error
 }

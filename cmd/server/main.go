@@ -29,7 +29,8 @@ func main() {
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Fprintf(os.Stdout, "listening on ws://%v\n", listener.Addr())
@@ -44,17 +45,17 @@ func main() {
 
 	brokers := strings.Split(brokerStr, ",")
 
-	var kafkaAdapter ports.KafkaPort
-	kafkaAdapter, err = secondary.NewSaramaAdapter(brokers)
+	var kafka ports.KafkaPort
+	kafka, err = secondary.NewSaramaAdapter(brokers)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create kafka adapter: %v\n", err)
 		os.Exit(1)
 	}
 
-	defer kafkaAdapter.Close()
+	defer kafka.CloseProducer()
 
 	pool := pool.NewPool()
-	ngin := engine.New(pool, kafkaAdapter)
+	ngin := engine.New(pool, kafka)
 
 	gs := server.NewGameServer(ctx, pool, ngin)
 
