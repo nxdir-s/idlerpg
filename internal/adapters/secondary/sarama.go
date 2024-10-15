@@ -2,7 +2,6 @@ package secondary
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -11,7 +10,8 @@ import (
 	"syscall"
 
 	"github.com/IBM/sarama"
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	pb "github.com/nxdir-s/IdleRpg/protobuf"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -152,6 +152,28 @@ func NewSaramaAdapter(brokers []string) (*SaramaAdapter, error) {
 	}, nil
 }
 
+// SendPlayerEvent marshals and sends player events to kafka
+func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *pb.PlayerEvent) error {
+	data, err := proto.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = a.producer.SendMessage(&sarama.ProducerMessage{
+		Topic: "player-events",
+		Value: sarama.ByteEncoder(data),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *SaramaAdapter) CloseProducer() error {
+	return a.producer.Close()
+}
+
 func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, topics []string) error {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -177,12 +199,10 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 				return
 			}
 
-			// handler.Ready = make(chan bool)
 			handler.Reset()
 		}
 	}()
 
-	// <-handler.Ready // wait til the consumer has been set up
 	handler.AwaitSetup()
 
 	fmt.Fprintf(os.Stdout, "Sarama consumer up and running!...\n")
@@ -226,26 +246,4 @@ func (a *SaramaAdapter) toggleConsumption() {
 	}
 
 	a.pauseConsumption = !a.pauseConsumption
-}
-
-// SendPlayerEvent marshals and sends player events to kafka
-func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *valobj.PlayerEvent) error {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
-
-	_, _, err = a.producer.SendMessage(&sarama.ProducerMessage{
-		Topic: "player-events",
-		Value: sarama.StringEncoder(data),
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *SaramaAdapter) CloseProducer() error {
-	return a.producer.Close()
 }
