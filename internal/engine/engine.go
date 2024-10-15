@@ -10,6 +10,7 @@ import (
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/ports"
 	"github.com/nxdir-s/IdleRpg/internal/server/pool"
+	pb "github.com/nxdir-s/IdleRpg/protobuf"
 	"github.com/nxdir-s/pipelines"
 )
 
@@ -103,12 +104,13 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 	}
 }
 
-func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *valobj.PlayerEvent {
+func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *pb.PlayerEvent {
 	// TODO: implement this
 	fmt.Fprint(os.Stdout, "running simulation...\n")
 
-	return &valobj.PlayerEvent{
-		Action: int(client.Player.Action),
+	return &pb.PlayerEvent{
+		Plid:   client.Player.Plid,
+		Action: pb.Action(client.Player.Action),
 	}
 }
 

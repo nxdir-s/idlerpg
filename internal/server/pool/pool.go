@@ -15,6 +15,8 @@ type Pool struct {
 	Clients    map[*Client]bool
 	Broadcast  chan *valobj.Event
 	Snapshot   chan chan *Snapshot
+
+	counter int32
 }
 
 type Snapshot struct {
@@ -39,6 +41,11 @@ func (p *Pool) Start(ctx context.Context) {
 			return
 		case client := <-p.Register:
 			fmt.Fprint(os.Stdout, "adding client to pool...\n")
+
+			// using counter for testing
+			p.counter++
+			client.Player.Plid = p.counter
+
 			p.Clients[client] = true
 		case client := <-p.Unregister:
 			fmt.Fprint(os.Stdout, "removing client from pool...\n")

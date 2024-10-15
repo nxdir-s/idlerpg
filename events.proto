@@ -1,0 +1,18 @@
+syntax = "proto3";
+package idlerpg;
+
+// import "google/protobuf/timestamp.proto";
+
+option go_package = "protobuf/";
+
+message PlayerEvent {
+    int32 plid = 1;
+    Action action = 2;
+}
+
+enum Action {
+    UNKNOWN = 0;
+    FIGHT = 1;
+    CRAFT = 2;
+    GATHER = 3;
+}

@@ -3,10 +3,10 @@ package ports
 import (
 	"context"
 
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	pb "github.com/nxdir-s/IdleRpg/protobuf"
 )
 
 type KafkaPort interface {
-	SendPlayerEvent(ctx context.Context, event *valobj.PlayerEvent) error
+	SendPlayerEvent(ctx context.Context, event *pb.PlayerEvent) error
 	CloseProducer() error
 }
