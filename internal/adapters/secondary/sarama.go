@@ -190,7 +190,8 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 				}
 
 				consumeErr = err
-				fmt.Fprintf(os.Stderr, "error in consumer, exiting...\n")
+				fmt.Fprintf(os.Stdout, "error in consumer, exiting...\n")
+
 				return
 			}
 
@@ -205,7 +206,7 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 
 	handler.AwaitSetup()
 
-	fmt.Fprintf(os.Stdout, "Sarama consumer up and running!...\n")
+	fmt.Fprintf(os.Stdout, "sarama consumer up and running...\n")
 
 	for a.keepRunning {
 		select {
@@ -237,12 +238,12 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 func (a *SaramaAdapter) toggleConsumption() {
 	if a.pauseConsumption {
 		a.consumer.ResumeAll()
-		fmt.Fprintf(os.Stdout, "Resuming consumption...\n")
+		fmt.Fprintf(os.Stdout, "resuming consumption...\n")
 	}
 
 	if !a.pauseConsumption {
 		a.consumer.PauseAll()
-		fmt.Fprintf(os.Stdout, "Pausing consumption...\n")
+		fmt.Fprintf(os.Stdout, "pausing consumption...\n")
 	}
 
 	a.pauseConsumption = !a.pauseConsumption

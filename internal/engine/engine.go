@@ -4,6 +4,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 )
 
 const (
+	MaxRandExp int32 = 100
+
 	SimulateMaxFan int = 3
 	KafkaMaxFan    int = 3
 
@@ -81,7 +84,6 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 	//      1. For ex. player is fighting mob, their action is Fight
 	//      2. The Fight action generates exp and random loot
 	//      3. The random loot and other unknowns need to be simulated
-	// 3. Run each simulation in go routine and send results to kafka
 	if len(players) == 0 {
 		fmt.Fprintf(os.Stdout, "%d players connected...\n", len(players))
 		return
@@ -105,12 +107,12 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 }
 
 func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *pb.PlayerEvent {
-	// TODO: implement this
 	fmt.Fprint(os.Stdout, "running simulation...\n")
 
 	return &pb.PlayerEvent{
 		Plid:   client.Player.Plid,
 		Action: pb.Action(client.Player.Action),
+		Exp:    rand.Int31n(MaxRandExp),
 	}
 }
 

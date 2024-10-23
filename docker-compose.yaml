@@ -20,7 +20,7 @@ services:
     image: idlerpg-web:latest
     container_name: idlerpg-web
     ports:
-      - 8080:8080
+      - 3001:3001
     restart: unless-stopped
     environment:
       BROKERS: kafka-1:19092,kafka-2:19092,kafka-3:19092
@@ -39,8 +39,16 @@ services:
     #    target: /dev/shm
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       POSTGRES_PASSWORD: example
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
 
   controller-1:
     image: apache/kafka:latest
