@@ -1,13 +1,20 @@
 package consumers
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/IBM/sarama"
 )
 
 type EngineConsumer struct {
 	Ready chan bool
+}
+
+func NewEngineConsumer() (*EngineConsumer, error) {
+	return &EngineConsumer{
+		Ready: make(chan bool),
+	}, nil
 }
 
 func (c *EngineConsumer) Reset() {
@@ -38,10 +45,11 @@ func (c *EngineConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				log.Printf("message channel was closed")
+				fmt.Fprint(os.Stdout, "message channel was closed\n")
 				return nil
 			}
-			log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+
+			fmt.Fprintf(os.Stdout, "Message claimed: value = %s, timestamp = %v, topic = %s\n", string(message.Value), message.Timestamp, message.Topic)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
 			return nil

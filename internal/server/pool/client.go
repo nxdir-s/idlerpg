@@ -8,14 +8,14 @@ import (
 	"os"
 
 	"github.com/coder/websocket"
-	"github.com/nxdir-s/IdleRpg/internal/core/entity/player"
+	"github.com/nxdir-s/IdleRpg/internal/core/entity"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 )
 
 type Client struct {
 	Conn   *websocket.Conn
 	Msgs   chan *valobj.Message
-	Player *player.Player
+	Player *entity.Player
 }
 
 // Read waits for client events and notifies the game server

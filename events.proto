@@ -8,6 +8,7 @@ option go_package = "protobuf/";
 message PlayerEvent {
     int32 plid = 1;
     Action action = 2;
+    int32 exp = 3;
 }
 
 enum Action {

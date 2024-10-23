@@ -18,7 +18,6 @@ func (e *ConnectionError) Error() string {
 }
 
 type PgxPool interface {
-	Ping(ctx context.Context) error
 	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
 }
@@ -42,8 +41,4 @@ func NewPostgresAdapter(ctx context.Context, pool PgxPool, logger *slog.Logger) 
 		conn:   pool,
 		logger: logger,
 	}, nil
-}
-
-func (a *PostgresAdapter) Ping(ctx context.Context) error {
-	return a.conn.Ping(ctx)
 }
