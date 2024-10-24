@@ -111,7 +111,7 @@ func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *pb.P
 
 	return &pb.PlayerEvent{
 		Plid:   client.Player.Plid,
-		Action: pb.Action(client.Player.Action),
+		Action: pb.Action(int32(client.Player.Action)),
 		Exp:    rand.Int31n(MaxRandExp),
 	}
 }

@@ -4,7 +4,7 @@ services:
   gameserver:
     image: idlerpg:latest
     container_name: idlerpg
-    build: .
+    build: cmd/server
     ports:
       - 3000:3000
     restart: unless-stopped
@@ -14,21 +14,21 @@ services:
       - kafka-1
       - kafka-2
       - kafka-3
-      - postgres
+      - database
 
-  webserver:
-    image: idlerpg-web:latest
-    container_name: idlerpg-web
-    ports:
-      - 3001:3001
-    restart: unless-stopped
-    environment:
-      BROKERS: kafka-1:19092,kafka-2:19092,kafka-3:19092
-    depends_on:
-      - gameserver
+  # webserver:
+  #   image: idlerpg-web:latest
+  #   container_name: idlerpg-web
+  #   ports:
+  #     - 3001:3001
+  #   restart: unless-stopped
+  #   environment:
+  #     BROKERS: kafka-1:19092,kafka-2:19092,kafka-3:19092
+  #   depends_on:
+  #     - gameserver
 
   database:
-    image: postgres:latest-alpine
+    image: postgres:latest
     container_name: postgres
     restart: unless-stopped
     # set shared memory limit when using docker-compose
@@ -48,7 +48,7 @@ services:
     image: adminer
     restart: always
     ports:
-      - 8080:8080
+      - 8000:8000
 
   controller-1:
     image: apache/kafka:latest
@@ -182,6 +182,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:master
     container_name: kafka-ui
+    restart: unless-stopped
     ports:
       - 8080:8080
     environment:
