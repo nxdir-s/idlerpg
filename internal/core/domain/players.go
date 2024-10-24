@@ -1,7 +1,13 @@
 package domain
 
-type Players struct{}
+import "github.com/nxdir-s/IdleRpg/internal/ports"
 
-func NewPlayers() (*Players, error) {
-	return &Players{}, nil
+type Players struct {
+	service ports.PlayerServicePort
+}
+
+func NewPlayers(service ports.PlayerServicePort) (*Players, error) {
+	return &Players{
+		service: service,
+	}, nil
 }
