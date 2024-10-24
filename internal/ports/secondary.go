@@ -12,6 +12,7 @@ type KafkaPort interface {
 }
 
 type DatabasePort interface {
+	NewTransactionAdapter(ctx context.Context) (DatabaseTxPort, error)
 }
 
 type DatabaseTxPort interface {
