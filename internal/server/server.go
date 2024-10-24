@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/coder/websocket"
-	"github.com/nxdir-s/IdleRpg/internal/core/entity/player"
+	"github.com/nxdir-s/IdleRpg/internal/core/entity"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
 	"github.com/nxdir-s/IdleRpg/internal/server/pool"
@@ -71,7 +71,7 @@ func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWri
 	c := &pool.Client{
 		Conn:   conn,
 		Msgs:   make(chan *valobj.Message),
-		Player: player.New(),
+		Player: entity.NewPlayer(),
 	}
 
 	server.connections.Register <- c
