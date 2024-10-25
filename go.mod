@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/IBM/sarama v1.43.3
 	github.com/coder/websocket v1.8.12
+	github.com/gobwas/ws v1.4.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/nxdir-s/pipelines v0.0.2
 	golang.org/x/sys v0.26.0
@@ -16,6 +17,8 @@ require (
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
+	github.com/gobwas/httphead v0.1.0 // indirect
+	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

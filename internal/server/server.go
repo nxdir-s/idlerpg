@@ -2,81 +2,63 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
+	"net"
 	"os"
 
-	"github.com/coder/websocket"
+	"github.com/gobwas/ws"
 	"github.com/nxdir-s/IdleRpg/internal/core/entity"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
-	"github.com/nxdir-s/IdleRpg/internal/server/pool"
 )
+
+type Client struct {
+	Conn   net.Conn
+	Fd     int
+	Msgs   chan *valobj.Message
+	Player *entity.Player
+}
 
 type GameServer struct {
 	engine      *engine.GameEngine
-	connections *pool.Pool
-	mux         http.ServeMux
+	connections *Pool
+	epoller     *Epoll
+	listener    net.Listener
 }
 
-func NewGameServer(ctx context.Context, pl *pool.Pool, ngin *engine.GameEngine) *GameServer {
+func NewGameServer(ctx context.Context, pool *Pool, ngin *engine.GameEngine, ln net.Listener) *GameServer {
 	defer func() {
 		go ngin.Start(ctx)
 	}()
-	go pl.Start(ctx)
+	go pool.Start(ctx)
 
 	gs := &GameServer{
 		engine:      ngin,
-		connections: pl,
+		connections: pool,
 	}
-
-	gs.mux.Handle("/", http.FileServer(http.Dir(".")))
-	gs.mux.HandleFunc("/ws", gs.serveWS)
 
 	return gs
 }
 
-func (server *GameServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	server.mux.ServeHTTP(w, r)
-}
+func (gs *GameServer) Start(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			conn, err := gs.listener.Accept()
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "failed to accept tcp connection: %+v\n", err)
+				continue
+			}
 
-func (server *GameServer) serveWS(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(os.Stdout, "recieved new client connection...\n")
+			_, err = ws.Upgrade(conn)
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "failed to upgrade tcp connection: %+v\n", err)
+				continue
+			}
 
-	var err error
-	err = server.registerClient(r.Context(), w, r)
-
-	if errors.Is(err, context.Canceled) {
-		return
+			gs.epoller.Add <- conn
+		}
 	}
-
-	if websocket.CloseStatus(err) == websocket.StatusNormalClosure ||
-		websocket.CloseStatus(err) == websocket.StatusGoingAway {
-		return
-	}
-
-	if err != nil {
-		return
-	}
-}
-
-// registerClient registers the incoming websocket connection to the game server
-func (server *GameServer) registerClient(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-	conn, err := websocket.Accept(w, r, nil)
-	if err != nil {
-		return err
-	}
-
-	c := &pool.Client{
-		Conn:   conn,
-		Msgs:   make(chan *valobj.Message),
-		Player: entity.NewPlayer(),
-	}
-
-	server.connections.Register <- c
-
-	go c.Read(ctx, server.connections)
-
-	return c.Listen(ctx)
 }
