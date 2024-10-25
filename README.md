@@ -1,6 +1,6 @@
-# Idle Rpg
+# IdleRpg
 
-This repository contains IdleRpg and the necessary assets to run it
+This repository contains the game and web servers for IdleRpg
 
 ## Architecture Diagram
 
