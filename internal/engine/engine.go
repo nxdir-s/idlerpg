@@ -10,7 +10,7 @@ import (
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"github.com/nxdir-s/IdleRpg/internal/ports"
-	"github.com/nxdir-s/IdleRpg/internal/server/pool"
+	"github.com/nxdir-s/IdleRpg/internal/server"
 	pb "github.com/nxdir-s/IdleRpg/protobuf"
 	"github.com/nxdir-s/pipelines"
 )
@@ -28,11 +28,11 @@ type GameEngine struct {
 	ticker      *time.Ticker
 	sigusr1     chan os.Signal
 	isPaused    bool
-	connections *pool.Pool
+	connections *server.Pool
 	kafka       ports.KafkaPort
 }
 
-func New(pool *pool.Pool, kafka ports.KafkaPort) *GameEngine {
+func New(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
 	return &GameEngine{
 		ticker:      time.NewTicker(TickerInterval),
 		sigusr1:     make(chan os.Signal, 1),
@@ -62,13 +62,13 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 
 			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
 
-			reply := make(chan *pool.Snapshot)
+			reply := make(chan *server.Snapshot)
 			ngin.connections.Snapshot <- reply
 
 			snapshot := <-reply
 
 			// process/simulate actions
-			go ngin.process(ctx, snapshot.Clients)
+			go ngin.process(ctx, snapshot.Connections)
 			snapshot.Processed <- true
 
 			event := ngin.buildEvent(t)
@@ -78,7 +78,7 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 	}
 }
 
-func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bool) {
+func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Client) {
 	// 1. Loop through players
 	// 2. Simulate their actions
 	//      1. For ex. player is fighting mob, their action is Fight
@@ -91,7 +91,8 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 
 	fmt.Fprintf(os.Stdout, "processings %d player actions...\n", len(players))
 
-	stream := pipelines.StreamMap(ctx, players)
+	stream := pipelines.StreamMap[int, *server.Client](ctx, players)
+
 	fanOutChannels := pipelines.FanOut(ctx, stream, ngin.Simulate, SimulateMaxFan)
 	playerEvents := pipelines.FanIn(ctx, fanOutChannels...)
 
@@ -106,7 +107,7 @@ func (ngin *GameEngine) process(ctx context.Context, players map[*pool.Client]bo
 	}
 }
 
-func (ngin *GameEngine) Simulate(ctx context.Context, client *pool.Client) *pb.PlayerEvent {
+func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *pb.PlayerEvent {
 	fmt.Fprint(os.Stdout, "running simulation...\n")
 
 	return &pb.PlayerEvent{

@@ -56,6 +56,8 @@ github.com/klauspost/compress v1.17.9 h1:6KIumPrER1LHsvBVuDa0r5xaG0Es51mhhB9BQB2
 github.com/klauspost/compress v1.17.9/go.mod h1:Di0epgTjJY877eYKx5yC51cX2A2Vl2ibi7bDH9ttBbw=
 github.com/nxdir-s/pipelines v0.0.2 h1:Vfu1QR4zbsBoeXeGQw4wL2P7O886VYx4xLWM6DPomeo=
 github.com/nxdir-s/pipelines v0.0.2/go.mod h1:w6OW05yULAttmm2bRq34nhaM8Qt3Div5keW2rY2OsAU=
+github.com/nxdir-s/pipelines v1.0.0 h1:XX9M121VdBvaqt/XP1dB4xKUnnRXmAE4dVc9yZbUb8M=
+github.com/nxdir-s/pipelines v1.0.0/go.mod h1:w6OW05yULAttmm2bRq34nhaM8Qt3Div5keW2rY2OsAU=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

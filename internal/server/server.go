@@ -9,8 +9,15 @@ import (
 	"github.com/gobwas/ws"
 	"github.com/nxdir-s/IdleRpg/internal/core/entity"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
-	"github.com/nxdir-s/IdleRpg/internal/engine"
 )
+
+type GameEngine interface {
+	Start(ctx context.Context)
+}
+
+type ClientPool interface {
+	Start(ctx context.Context)
+}
 
 type Client struct {
 	Conn   net.Conn
@@ -20,13 +27,13 @@ type Client struct {
 }
 
 type GameServer struct {
-	engine      *engine.GameEngine
-	connections *Pool
+	engine      GameEngine
+	connections ClientPool
 	epoller     *Epoll
 	listener    net.Listener
 }
 
-func NewGameServer(ctx context.Context, pool *Pool, ngin *engine.GameEngine, ln net.Listener) *GameServer {
+func NewGameServer(ctx context.Context, pool ClientPool, ngin GameEngine, ln net.Listener) *GameServer {
 	defer func() {
 		go ngin.Start(ctx)
 	}()
@@ -35,6 +42,7 @@ func NewGameServer(ctx context.Context, pool *Pool, ngin *engine.GameEngine, ln 
 	gs := &GameServer{
 		engine:      ngin,
 		connections: pool,
+		listener:    ln,
 	}
 
 	return gs
