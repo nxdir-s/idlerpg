@@ -7,6 +7,7 @@ require (
 	github.com/coder/websocket v1.8.12
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/nxdir-s/pipelines v0.0.2
+	golang.org/x/sys v0.26.0
 	google.golang.org/protobuf v1.35.1
 )
 
