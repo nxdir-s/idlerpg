@@ -22,9 +22,8 @@ func (e *EpollError) Error() string {
 }
 
 type Epoll struct {
-	fd          int
-	connections map[int]net.Conn
-	pool        *Pool
+	fd   int
+	pool *Pool
 
 	Add    chan net.Conn
 	Remove chan net.Conn
@@ -37,11 +36,10 @@ func NewEpoll(pool *Pool) (*Epoll, error) {
 	}
 
 	return &Epoll{
-		fd:          fd,
-		connections: make(map[int]net.Conn),
-		pool:        pool,
-		Add:         make(chan net.Conn),
-		Remove:      make(chan net.Conn),
+		fd:     fd,
+		pool:   pool,
+		Add:    make(chan net.Conn),
+		Remove: make(chan net.Conn),
 	}, nil
 }
 
