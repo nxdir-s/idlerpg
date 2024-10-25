@@ -99,6 +99,11 @@ func (e *Epoll) Wait() ([]*Client, error) {
 		return nil, err
 	}
 
+	// come back to this, does it make sense?
+	if len(events) == 0 {
+		return nil, nil
+	}
+
 	event := &EpollEvent{
 		Events: events,
 		Resp:   make(chan []*Client),
