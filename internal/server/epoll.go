@@ -1,4 +1,4 @@
-package epoll
+package server
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"syscall"
 
+	"github.com/nxdir-s/IdleRpg/internal/core/entity"
+	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"golang.org/x/sys/unix"
 )
 
@@ -22,12 +24,13 @@ func (e *EpollError) Error() string {
 type Epoll struct {
 	fd          int
 	connections map[int]net.Conn
+	pool        *Pool
 
 	Add    chan net.Conn
 	Remove chan net.Conn
 }
 
-func NewEpoll() (*Epoll, error) {
+func NewEpoll(pool *Pool) (*Epoll, error) {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
 		return nil, &EpollError{err}
@@ -36,6 +39,7 @@ func NewEpoll() (*Epoll, error) {
 	return &Epoll{
 		fd:          fd,
 		connections: make(map[int]net.Conn),
+		pool:        pool,
 		Add:         make(chan net.Conn),
 		Remove:      make(chan net.Conn),
 	}, nil
@@ -66,10 +70,11 @@ func (e *Epoll) add(conn net.Conn) error {
 		return err
 	}
 
-	e.connections[fd] = conn
-
-	if len(e.connections)%100 == 0 {
-		fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(e.connections))
+	e.pool.Register <- &Client{
+		Conn:   conn,
+		Fd:     fd,
+		Msgs:   make(chan *valobj.Message),
+		Player: entity.NewPlayer(),
 	}
 
 	return nil
@@ -83,32 +88,27 @@ func (e *Epoll) remove(conn net.Conn) error {
 		return err
 	}
 
-	delete(e.connections, fd)
-
-	if len(e.connections)%100 == 0 {
-		fmt.Fprintf(os.Stdout, "total number of connections: %d", len(e.connections))
-	}
+	e.pool.Unregister <- fd
 
 	return nil
 }
 
-func (e *Epoll) Wait() ([]net.Conn, error) {
-	events := make([]unix.EpollEvent, 100)
-	n, err := unix.EpollWait(e.fd, events, 100)
+func (e *Epoll) Wait() ([]*Client, error) {
+	events := make([]unix.EpollEvent, 0, 100)
+
+	_, err := unix.EpollWait(e.fd, events, 100)
 	if err != nil {
 		return nil, err
 	}
 
-	// e.lock.RLock()
-	// defer e.lock.RUnlock()
-
-	var connections []net.Conn
-	for i := 0; i < n; i++ {
-		conn := e.connections[int(events[i].Fd)]
-		connections = append(connections, conn)
+	event := &EpollEvent{
+		Events: events,
+		Resp:   make(chan []*Client),
 	}
 
-	return connections, nil
+	e.pool.EpollEvents <- event
+
+	return <-event.Resp, nil
 }
 
 func (e *Epoll) getFileDescriptor(conn net.Conn) int {

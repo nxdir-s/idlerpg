@@ -3,13 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
-	"time"
 
 	"github.com/nxdir-s/IdleRpg/internal/adapters/secondary"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
@@ -57,34 +54,14 @@ func main() {
 	pool := pool.NewPool()
 	ngin := engine.New(pool, kafka)
 
-	gs := server.NewGameServer(ctx, pool, ngin)
+	server := server.NewGameServer(ctx, pool, ngin, listener)
 
-	server := &http.Server{
-		Handler:      gs,
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 10,
-		BaseContext: func(l net.Listener) context.Context {
-			return ctx
-		},
-	}
-
-	errChan := make(chan error, 1)
-	go func() {
-		fmt.Fprint(os.Stdout, "starting server...\n")
-		errChan <- server.Serve(listener)
-	}()
+	fmt.Fprint(os.Stdout, "starting server...\n")
+	go server.Start(ctx)
 
 	select {
 	case <-ctx.Done():
 		fmt.Fprintf(os.Stdout, "context canceled: %+v\n", ctx.Err())
-	case err := <-errChan:
-		fmt.Fprintf(os.Stdout, "failed to serve: %+v\n", err)
-	}
-
-	ctx, timeout := context.WithTimeout(ctx, time.Second*10)
-	defer timeout()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("error shutting down server: %+v\n", err)
+		os.Exit(0)
 	}
 }
