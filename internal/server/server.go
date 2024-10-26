@@ -7,48 +7,38 @@ import (
 	"os"
 
 	"github.com/gobwas/ws"
-	"github.com/nxdir-s/IdleRpg/internal/core/entity"
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 )
 
-type GameEngine interface {
+type Startable interface {
 	Start(ctx context.Context)
-}
-
-type ClientPool interface {
-	Start(ctx context.Context)
-}
-
-type Client struct {
-	Conn   net.Conn
-	Fd     int
-	Msgs   chan *valobj.Message
-	Player *entity.Player
 }
 
 type GameServer struct {
-	engine      GameEngine
-	connections ClientPool
-	epoller     *Epoll
 	listener    net.Listener
+	engine      Startable
+	connections Startable
+	epoller     *Epoll
 }
 
-func NewGameServer(ctx context.Context, pool ClientPool, ngin GameEngine, ln net.Listener) *GameServer {
-	defer func() {
-		go ngin.Start(ctx)
-	}()
+func NewGameServer(ctx context.Context, ln net.Listener, epoll *Epoll, ngin Startable, pool Startable) *GameServer {
 	go pool.Start(ctx)
+	go epoll.Start(ctx)
+	go ngin.Start(ctx)
 
-	gs := &GameServer{
+	server := &GameServer{
+		listener:    ln,
 		engine:      ngin,
 		connections: pool,
-		listener:    ln,
+		epoller:     epoll,
 	}
 
-	return gs
+	return server
 }
 
+// Start listens for incoming tcp connections
 func (gs *GameServer) Start(ctx context.Context) {
+	go gs.listen(ctx)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -67,6 +57,30 @@ func (gs *GameServer) Start(ctx context.Context) {
 			}
 
 			gs.epoller.Add <- conn
+		}
+	}
+}
+
+// listen waits for incoming client messages
+func (gs *GameServer) listen(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			clients, err := gs.epoller.Wait()
+			if err != nil {
+				fmt.Fprintf(os.Stdout, "failed to recieve epoll event: %+v\n", err)
+				continue
+			}
+
+			if len(clients) == 0 {
+				continue
+			}
+
+			for _, client := range clients {
+				go client.ReadMessage(ctx)
+			}
 		}
 	}
 }

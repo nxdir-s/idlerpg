@@ -116,8 +116,7 @@ func (e *Epoll) Wait() ([]*Client, error) {
 
 func (e *Epoll) getFileDescriptor(conn net.Conn) int {
 	tcpConn := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
-	fdVal := tcpConn.FieldByName("fd")
-	pfdVal := reflect.Indirect(fdVal).FieldByName("pfd")
+	pfdVal := reflect.Indirect(tcpConn.FieldByName("fd")).FieldByName("pfd")
 
 	return int(pfdVal.FieldByName("Sysfd").Int())
 }

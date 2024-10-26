@@ -68,7 +68,7 @@ func (p *Pool) Start(ctx context.Context) {
 				fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(p.Connections))
 			}
 		case event := <-p.EpollEvents:
-			var connections []*Client
+			connections := make([]*Client, 0, len(event.Events))
 			for i := range event.Events {
 				connections = append(connections, p.Connections[int(event.Events[i].Fd)])
 			}
