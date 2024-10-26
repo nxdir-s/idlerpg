@@ -57,7 +57,7 @@ func (p *Pool) Start(ctx context.Context) {
 
 			p.Connections[client.Fd] = client
 
-			if len(p.Connections)%100 == 0 {
+			if len(p.Connections)%10 == 0 {
 				fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(p.Connections))
 			}
 		case fd := <-p.Unregister:
@@ -65,7 +65,7 @@ func (p *Pool) Start(ctx context.Context) {
 
 			delete(p.Connections, fd)
 
-			if len(p.Connections)%100 == 0 {
+			if len(p.Connections)%10 == 0 {
 				fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(p.Connections))
 			}
 		case event := <-p.EpollEvents:
