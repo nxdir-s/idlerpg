@@ -7,12 +7,12 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/nxdir-s/IdleRpg/internal/adapters/secondary"
 	"github.com/nxdir-s/IdleRpg/internal/engine"
 	"github.com/nxdir-s/IdleRpg/internal/ports"
 	"github.com/nxdir-s/IdleRpg/internal/server"
-	"github.com/nxdir-s/IdleRpg/internal/server/pool"
 )
 
 const (
@@ -22,6 +22,18 @@ const (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	var rLimit syscall.Rlimit
+	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
+		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		os.Exit(1)
+	}
+
+	rLimit.Cur = rLimit.Max
+	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
+		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		os.Exit(1)
+	}
 
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
@@ -40,23 +52,27 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
-	brokers := strings.Split(brokerStr, ",")
-
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewSaramaAdapter(brokers)
+	kafka, err = secondary.NewSaramaAdapter(strings.Split(brokerStr, ","))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create kafka adapter: %v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %+v\n", err)
+		os.Exit(1)
+	}
+	defer kafka.CloseProducer()
+
+	pool := server.NewPool()
+	ngin := engine.New(pool, kafka)
+
+	epoll, err := server.NewEpoll(pool)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "failed to create epoller: %+v\n", err)
 		os.Exit(1)
 	}
 
-	defer kafka.CloseProducer()
-
-	pool := pool.NewPool()
-	ngin := engine.New(pool, kafka)
-
-	server := server.NewGameServer(ctx, pool, ngin, listener)
+	server := server.NewGameServer(ctx, listener, epoll, ngin, pool)
 
 	fmt.Fprint(os.Stdout, "starting server...\n")
+
 	go server.Start(ctx)
 
 	select {
