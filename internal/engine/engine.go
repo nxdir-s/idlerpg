@@ -1,4 +1,3 @@
-// SIGUSR1 toggles the engine pausing/running
 package engine
 
 import (
@@ -67,7 +66,6 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 
 			snapshot := <-reply
 
-			// process/simulate actions
 			go ngin.process(ctx, snapshot.Connections)
 			snapshot.Processed <- true
 
@@ -80,13 +78,8 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 }
 
 func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Client) {
-	// 1. Loop through players
-	// 2. Simulate their actions
-	//      1. For ex. player is fighting mob, their action is Fight
-	//      2. The Fight action generates exp and random loot
-	//      3. The random loot and other unknowns need to be simulated
 	if len(players) == 0 {
-		fmt.Fprintf(os.Stdout, "%d players connected...\n", len(players))
+		fmt.Fprint(os.Stdout, "0 players connected...\n")
 		return
 	}
 
