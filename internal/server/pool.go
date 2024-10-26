@@ -16,12 +16,13 @@ type EpollEvent struct {
 }
 
 type Pool struct {
+	Connections map[int]*Client
+
 	Register    chan *Client
 	Unregister  chan int
 	Broadcast   chan *valobj.Event
 	Snapshot    chan chan *Snapshot
 	EpollEvents chan *EpollEvent
-	Connections map[int]*Client
 
 	counter int32
 }
@@ -33,12 +34,12 @@ type Snapshot struct {
 
 func NewPool() *Pool {
 	return &Pool{
+		Connections: make(map[int]*Client),
 		Register:    make(chan *Client),
 		Unregister:  make(chan int),
 		Broadcast:   make(chan *valobj.Event),
 		Snapshot:    make(chan chan *Snapshot),
 		EpollEvents: make(chan *EpollEvent),
-		Connections: make(map[int]*Client),
 	}
 }
 
