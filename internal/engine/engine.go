@@ -25,19 +25,19 @@ const (
 )
 
 type GameEngine struct {
-	ticker      *time.Ticker
-	sigusr1     chan os.Signal
-	isPaused    bool
-	connections *server.Pool
-	kafka       ports.KafkaPort
+	ticker   *time.Ticker
+	sigusr1  chan os.Signal
+	isPaused bool
+	pool     *server.Pool
+	kafka    ports.KafkaPort
 }
 
 func New(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
 	return &GameEngine{
-		ticker:      time.NewTicker(TickerInterval),
-		sigusr1:     make(chan os.Signal, 1),
-		connections: pool,
-		kafka:       kafka,
+		ticker:  time.NewTicker(TickerInterval),
+		sigusr1: make(chan os.Signal, 1),
+		pool:    pool,
+		kafka:   kafka,
 	}
 }
 
@@ -63,7 +63,7 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
 
 			reply := make(chan *server.Snapshot)
-			ngin.connections.Snapshot <- reply
+			ngin.pool.Snapshot <- reply
 
 			snapshot := <-reply
 
@@ -72,7 +72,8 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 			snapshot.Processed <- true
 
 			event := ngin.buildEvent(t)
-			ngin.connections.Broadcast <- event
+
+			ngin.pool.Broadcast <- event
 			<-event.Consumed
 		}
 	}
