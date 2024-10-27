@@ -10,6 +10,10 @@ import (
 	"github.com/nxdir-s/pipelines"
 )
 
+const (
+	MaxReadFan int = 3
+)
+
 type Startable interface {
 	Start(ctx context.Context)
 }
@@ -80,7 +84,7 @@ func (gs *GameServer) listen(ctx context.Context) {
 			}
 
 			stream := pipelines.StreamSlice(ctx, clients)
-			fanOut := pipelines.FanOut(ctx, stream, readMsg, 3)
+			fanOut := pipelines.FanOut(ctx, stream, readMsg, MaxReadFan)
 			errChan := pipelines.FanIn(ctx, fanOut...)
 
 			for err := range errChan {
