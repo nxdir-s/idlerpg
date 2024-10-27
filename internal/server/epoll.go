@@ -25,7 +25,7 @@ type Epoll struct {
 	pool *Pool
 
 	Add    chan net.Conn
-	Remove chan net.Conn
+	Remove chan *Client
 }
 
 func NewEpoll(pool *Pool) (*Epoll, error) {
@@ -38,7 +38,7 @@ func NewEpoll(pool *Pool) (*Epoll, error) {
 		fd:     fd,
 		pool:   pool,
 		Add:    make(chan net.Conn),
-		Remove: make(chan net.Conn),
+		Remove: make(chan *Client),
 	}, nil
 }
 
@@ -51,8 +51,8 @@ func (e *Epoll) Start(ctx context.Context) {
 			if err := e.add(conn); err != nil {
 				fmt.Fprintf(os.Stdout, "failed to add connection: %+v\n", err)
 			}
-		case conn := <-e.Remove:
-			if err := e.remove(conn); err != nil {
+		case client := <-e.Remove:
+			if err := e.remove(client); err != nil {
 				fmt.Fprintf(os.Stdout, "failed to remove connection: %+v\n", err)
 			}
 		}
@@ -90,18 +90,18 @@ func (e *Epoll) add(conn net.Conn) error {
 	return nil
 }
 
-func (e *Epoll) remove(conn net.Conn) error {
-	fd, err := e.getFileDescriptor(conn)
+func (e *Epoll) remove(client *Client) error {
+	fd, err := e.getFileDescriptor(client.Conn)
 	if err != nil {
 		return err
 	}
+
+	e.pool.Remove <- client.Fd
 
 	err = unix.EpollCtl(e.fd, unix.EPOLL_CTL_DEL, fd, nil)
 	if err != nil {
 		return err
 	}
-
-	e.pool.Remove <- fd
 
 	return nil
 }

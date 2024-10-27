@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 	"golang.org/x/sys/unix"
@@ -57,17 +56,13 @@ func (p *Pool) Start(ctx context.Context) {
 
 			p.Connections[client.Fd] = client
 
-			if len(p.Connections)%10 == 0 {
-				fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(p.Connections))
-			}
+			fmt.Fprintf(os.Stdout, "added client to pool, total number of connections: %d\n", len(p.Connections))
 		case fd := <-p.Remove:
 			fmt.Fprint(os.Stdout, "removing client from pool...\n")
 
 			delete(p.Connections, fd)
 
-			if len(p.Connections)%10 == 0 {
-				fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(p.Connections))
-			}
+			fmt.Fprintf(os.Stdout, "removed client from pool, total number of connections: %d\n", len(p.Connections))
 		case event := <-p.EpollEvents:
 			connections := make([]*Client, 0, len(event.Events))
 			for i := range event.Events {
@@ -92,13 +87,7 @@ func (p *Pool) Start(ctx context.Context) {
 			fmt.Fprintf(os.Stdout, "recieved event to broadcast: %s\n", event.Body.Body)
 
 			for _, client := range p.Connections {
-				select {
-				case <-ctx.Done():
-					return
-				case client.Msgs <- event.Body:
-				case <-time.After(80 * time.Millisecond):
-					fmt.Fprint(os.Stdout, "client too slow, dropping event...\n")
-				}
+				go client.SendMessage(ctx, event.Body)
 			}
 
 			event.Consumed <- true
