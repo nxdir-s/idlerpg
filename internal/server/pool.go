@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	"github.com/nxdir-s/pipelines"
 	"golang.org/x/sys/unix"
 )
 
@@ -86,9 +87,23 @@ func (p *Pool) Start(ctx context.Context) {
 		case event := <-p.Broadcast:
 			fmt.Fprintf(os.Stdout, "recieved event to broadcast: %s\n", event.Body.Body)
 
-			for _, client := range p.Connections {
-				go client.SendMessage(ctx, event.Body)
+			sendMsg := func(ctx context.Context, client *Client) error {
+				return client.SendMessage(ctx, event.Body)
 			}
+
+			stream := pipelines.StreamMap[int, *Client](ctx, p.Connections)
+			fanOut := pipelines.FanOut(ctx, stream, sendMsg, 3)
+			errChan := pipelines.FanIn(ctx, fanOut...)
+
+			for err := range errChan {
+				if err != nil {
+					fmt.Fprintf(os.Stdout, "error sending message to client: %+v\n", err)
+				}
+			}
+
+			// for _, client := range p.Connections {
+			// 	go client.SendMessage(ctx, event.Body)
+			// }
 
 			event.Consumed <- true
 		}

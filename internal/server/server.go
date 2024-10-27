@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/gobwas/ws"
+	"github.com/nxdir-s/pipelines"
 )
 
 type Startable interface {
@@ -74,8 +75,18 @@ func (gs *GameServer) listen(ctx context.Context) {
 				continue
 			}
 
-			for _, client := range clients {
-				go client.ReadMessage(ctx, gs.epoller)
+			readMsg := func(ctx context.Context, client *Client) error {
+				return client.ReadMessage(ctx, gs.epoller)
+			}
+
+			stream := pipelines.StreamSlice(ctx, clients)
+			fanOut := pipelines.FanOut(ctx, stream, readMsg, 3)
+			errChan := pipelines.FanIn(ctx, fanOut...)
+
+			for err := range errChan {
+				if err != nil {
+					fmt.Fprintf(os.Stdout, "error reading client message: %+v\n", err)
+				}
 			}
 		}
 	}
