@@ -74,12 +74,8 @@ func (gs *GameServer) listen(ctx context.Context) {
 				continue
 			}
 
-			if len(clients) == 0 {
-				continue
-			}
-
 			for _, client := range clients {
-				go client.ReadMessage(ctx)
+				go client.ReadMessage(ctx, gs.epoller)
 			}
 		}
 	}

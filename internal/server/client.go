@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"os"
 
 	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 	"github.com/nxdir-s/IdleRpg/internal/core/entity"
 	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
 )
@@ -19,6 +21,19 @@ type Client struct {
 	Player *entity.Player
 }
 
+func (c *Client) SendMessage(ctx context.Context, msg *valobj.Message) {
+	wr := wsutil.NewWriter(c.Conn, ws.StateServerSide, ws.OpText)
+
+	if err := json.NewEncoder(wr).Encode(msg); err != nil {
+		fmt.Fprintf(os.Stdout, "error encoding message: %s\n", err.Error())
+		return
+	}
+
+	if err := wr.Flush(); err != nil {
+		fmt.Fprintf(os.Stdout, "error flushing writer: %+v\n", err)
+	}
+}
+
 func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) {
 	for {
 		select {
@@ -28,7 +43,7 @@ func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) {
 			header, err := ws.ReadHeader(c.Conn)
 			if err != nil {
 				if err == io.EOF {
-					epoller.Remove <- c.Conn
+					epoller.Remove <- c
 				}
 
 				fmt.Fprintf(os.Stdout, "failed to read header: %+v\n", err)
