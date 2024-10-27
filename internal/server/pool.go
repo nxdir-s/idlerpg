@@ -10,6 +10,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const (
+	MaxSendFan int = 3
+)
+
 type EpollEvent struct {
 	Events []unix.EpollEvent
 	Resp   chan []*Client
@@ -92,7 +96,7 @@ func (p *Pool) Start(ctx context.Context) {
 			}
 
 			stream := pipelines.StreamMap[int, *Client](ctx, p.Connections)
-			fanOut := pipelines.FanOut(ctx, stream, sendMsg, 3)
+			fanOut := pipelines.FanOut(ctx, stream, sendMsg, MaxSendFan)
 			errChan := pipelines.FanIn(ctx, fanOut...)
 
 			for err := range errChan {
