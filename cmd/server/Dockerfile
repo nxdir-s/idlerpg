@@ -6,7 +6,6 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bootstrap -ldflags="-s -w" cmd/server/main.go
 
-# FROM arm64v8/golang:1.23.2-alpine3.20
 FROM arm64v8/alpine:latest
 
 WORKDIR /app
