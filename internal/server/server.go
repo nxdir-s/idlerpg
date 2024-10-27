@@ -16,11 +16,11 @@ type Startable interface {
 type GameServer struct {
 	listener    net.Listener
 	engine      Startable
-	connections Startable
+	connections *Pool
 	epoller     *Epoll
 }
 
-func NewGameServer(ctx context.Context, ln net.Listener, epoll *Epoll, ngin Startable, pool Startable) *GameServer {
+func NewGameServer(ctx context.Context, ln net.Listener, epoll *Epoll, ngin Startable, pool *Pool) *GameServer {
 	go pool.Start(ctx)
 	go epoll.Start(ctx)
 	go ngin.Start(ctx)

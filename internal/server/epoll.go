@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"reflect"
 	"syscall"
 
 	"github.com/nxdir-s/IdleRpg/internal/core/entity"
@@ -61,9 +60,22 @@ func (e *Epoll) Start(ctx context.Context) {
 }
 
 func (e *Epoll) add(conn net.Conn) error {
-	fd := e.getFileDescriptor(conn)
+	fd, err := e.getFileDescriptor(conn)
+	if err != nil {
+		return err
+	}
 
-	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_ADD, fd, &unix.EpollEvent{Events: unix.POLLIN | unix.POLLHUP, Fd: int32(fd)})
+	err = unix.SetNonblock(fd, true)
+	if err != nil {
+		return err
+	}
+
+	event := unix.EpollEvent{
+		Events: unix.POLLIN | unix.POLLHUP,
+		Fd:     int32(fd),
+	}
+
+	err = unix.EpollCtl(e.fd, unix.EPOLL_CTL_ADD, fd, &event)
 	if err != nil {
 		return err
 	}
@@ -79,28 +91,31 @@ func (e *Epoll) add(conn net.Conn) error {
 }
 
 func (e *Epoll) remove(conn net.Conn) error {
-	fd := e.getFileDescriptor(conn)
-
-	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_DEL, fd, nil)
+	fd, err := e.getFileDescriptor(conn)
 	if err != nil {
 		return err
 	}
 
-	e.pool.Unregister <- fd
+	err = unix.EpollCtl(e.fd, unix.EPOLL_CTL_DEL, fd, nil)
+	if err != nil {
+		return err
+	}
+
+	e.pool.Remove <- fd
 
 	return nil
 }
 
 func (e *Epoll) Wait() ([]*Client, error) {
-	events := make([]unix.EpollEvent, 0, 100)
+	events := make([]unix.EpollEvent, 100)
 
 	_, err := unix.EpollWait(e.fd, events, 100)
 	if err != nil {
-		return nil, err
-	}
+		if err == unix.EINTR {
+			return nil, nil
+		}
 
-	if len(events) == 0 {
-		return nil, nil
+		return nil, err
 	}
 
 	event := &EpollEvent{
@@ -113,9 +128,20 @@ func (e *Epoll) Wait() ([]*Client, error) {
 	return <-event.Resp, nil
 }
 
-func (e *Epoll) getFileDescriptor(conn net.Conn) int {
-	tcpConn := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
-	pfdVal := reflect.Indirect(tcpConn.FieldByName("fd")).FieldByName("pfd")
+func (e *Epoll) getFileDescriptor(conn net.Conn) (int, error) {
+	rawConn, err := conn.(syscall.Conn).SyscallConn()
+	if err != nil {
+		return 0, err
+	}
 
-	return int(pfdVal.FieldByName("Sysfd").Int())
+	sfd := 0
+
+	err = rawConn.Control(func(fd uintptr) {
+		sfd = int(fd)
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return sfd, nil
 }

@@ -19,7 +19,7 @@ type Client struct {
 	Player *entity.Player
 }
 
-func (c *Client) ReadMessage(ctx context.Context) {
+func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -27,6 +27,10 @@ func (c *Client) ReadMessage(ctx context.Context) {
 		default:
 			header, err := ws.ReadHeader(c.Conn)
 			if err != nil {
+				if err == io.EOF {
+					epoller.Remove <- c.Conn
+				}
+
 				fmt.Fprintf(os.Stdout, "failed to read header: %+v\n", err)
 				return
 			}

@@ -65,7 +65,7 @@ func main() {
 
 	epoll, err := server.NewEpoll(pool)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create epoller: %+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create epoll: %+v\n", err)
 		os.Exit(1)
 	}
 
