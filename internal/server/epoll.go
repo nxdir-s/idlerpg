@@ -59,6 +59,28 @@ func (e *Epoll) Start(ctx context.Context) {
 	}
 }
 
+func (e *Epoll) Wait() ([]*Client, error) {
+	events := make([]unix.EpollEvent, 100)
+
+	_, err := unix.EpollWait(e.fd, events, 100)
+	if err != nil {
+		if err == unix.EINTR {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	event := &EpollEvent{
+		Events: events,
+		Resp:   make(chan []*Client),
+	}
+
+	e.pool.EpollEvents <- event
+
+	return <-event.Resp, nil
+}
+
 func (e *Epoll) add(conn net.Conn) error {
 	fd, err := e.getFileDescriptor(conn)
 	if err != nil {
@@ -104,28 +126,6 @@ func (e *Epoll) remove(client *Client) error {
 	}
 
 	return nil
-}
-
-func (e *Epoll) Wait() ([]*Client, error) {
-	events := make([]unix.EpollEvent, 100)
-
-	_, err := unix.EpollWait(e.fd, events, 100)
-	if err != nil {
-		if err == unix.EINTR {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	event := &EpollEvent{
-		Events: events,
-		Resp:   make(chan []*Client),
-	}
-
-	e.pool.EpollEvents <- event
-
-	return <-event.Resp, nil
 }
 
 func (e *Epoll) getFileDescriptor(conn net.Conn) (int, error) {
