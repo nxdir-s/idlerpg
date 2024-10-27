@@ -101,10 +101,6 @@ func (p *Pool) Start(ctx context.Context) {
 				}
 			}
 
-			// for _, client := range p.Connections {
-			// 	go client.SendMessage(ctx, event.Body)
-			// }
-
 			event.Consumed <- true
 		}
 	}
