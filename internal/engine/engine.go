@@ -66,7 +66,8 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 
 			snapshot := <-reply
 
-			go ngin.process(ctx, snapshot.Connections)
+			// go ngin.process(ctx, snapshot.Connections)
+			ngin.process(ctx, snapshot.Connections)
 			snapshot.Processed <- true
 
 			event := ngin.buildEvent(t)
