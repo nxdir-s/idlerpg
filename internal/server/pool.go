@@ -19,7 +19,7 @@ type Pool struct {
 	Connections map[int]*Client
 
 	Register    chan *Client
-	Unregister  chan int
+	Remove      chan int
 	Broadcast   chan *valobj.Event
 	Snapshot    chan chan *Snapshot
 	EpollEvents chan *EpollEvent
@@ -36,7 +36,7 @@ func NewPool() *Pool {
 	return &Pool{
 		Connections: make(map[int]*Client),
 		Register:    make(chan *Client),
-		Unregister:  make(chan int),
+		Remove:      make(chan int),
 		Broadcast:   make(chan *valobj.Event),
 		Snapshot:    make(chan chan *Snapshot),
 		EpollEvents: make(chan *EpollEvent),
@@ -60,7 +60,7 @@ func (p *Pool) Start(ctx context.Context) {
 			if len(p.Connections)%10 == 0 {
 				fmt.Fprintf(os.Stdout, "total number of connections: %d\n", len(p.Connections))
 			}
-		case fd := <-p.Unregister:
+		case fd := <-p.Remove:
 			fmt.Fprint(os.Stdout, "removing client from pool...\n")
 
 			delete(p.Connections, fd)
@@ -71,7 +71,12 @@ func (p *Pool) Start(ctx context.Context) {
 		case event := <-p.EpollEvents:
 			connections := make([]*Client, 0, len(event.Events))
 			for i := range event.Events {
-				connections = append(connections, p.Connections[int(event.Events[i].Fd)])
+				conn, ok := p.Connections[int(event.Events[i].Fd)]
+				if !ok {
+					continue
+				}
+
+				connections = append(connections, conn)
 			}
 
 			event.Resp <- connections

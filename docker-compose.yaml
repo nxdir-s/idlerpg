@@ -4,7 +4,6 @@ services:
   gameserver:
     image: idlerpg:latest
     container_name: idlerpg
-    build: cmd/server
     ports:
       - 3000:3000
     restart: unless-stopped
@@ -40,7 +39,7 @@ services:
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       POSTGRES_PASSWORD: example
 
