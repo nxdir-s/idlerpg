@@ -53,8 +53,6 @@ func (p *Pool) Start(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case client := <-p.Register:
-			fmt.Fprint(os.Stdout, "adding client to pool...\n")
-
 			// using counter for testing
 			p.counter++
 			client.Player.Plid = p.counter
@@ -63,10 +61,7 @@ func (p *Pool) Start(ctx context.Context) {
 
 			fmt.Fprintf(os.Stdout, "added client to pool, total number of connections: %d\n", len(p.Connections))
 		case fd := <-p.Remove:
-			fmt.Fprint(os.Stdout, "removing client from pool...\n")
-
 			delete(p.Connections, fd)
-
 			fmt.Fprintf(os.Stdout, "removed client from pool, total number of connections: %d\n", len(p.Connections))
 		case event := <-p.EpollEvents:
 			connections := make([]*Client, 0, len(event.Events))

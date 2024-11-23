@@ -31,7 +31,7 @@ type GameEngine struct {
 	isPaused bool
 }
 
-func New(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
+func NewGameEngine(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
 	return &GameEngine{
 		kafka:   kafka,
 		pool:    pool,
