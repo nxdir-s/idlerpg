@@ -3,6 +3,7 @@ package secondary
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -24,6 +25,7 @@ type PgxPool interface {
 	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
+// NewPgxPool creates a pgxpool.Pool
 func NewPgxPool(ctx context.Context, dbUrl string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, dbUrl)
 	if err != nil {
@@ -40,6 +42,7 @@ type PgxTx interface {
 
 type PostgresOpt func(a *PostgresAdapter)
 
+// WithPgxTx sets the transaction adapter
 func WithPgxTx(tx PgxTx) PostgresOpt {
 	return func(a *PostgresAdapter) {
 		a.tx = tx
@@ -52,6 +55,7 @@ type PostgresAdapter struct {
 	logger *slog.Logger
 }
 
+// NewPostgresAdapter creates a postgres adapter using the supplied options
 func NewPostgresAdapter(ctx context.Context, pool PgxPool, logger *slog.Logger, opts ...PostgresOpt) (*PostgresAdapter, error) {
 	adapter := &PostgresAdapter{
 		conn:   pool,
@@ -65,6 +69,7 @@ func NewPostgresAdapter(ctx context.Context, pool PgxPool, logger *slog.Logger, 
 	return adapter, nil
 }
 
+// NewTransactionAdapter creates a postgres adapter for executing transactions
 func (a *PostgresAdapter) NewTransactionAdapter(ctx context.Context) (ports.DatabaseTxPort, error) {
 	tx, err := a.conn.Begin(ctx)
 	if err != nil {
@@ -79,10 +84,20 @@ func (a *PostgresAdapter) NewTransactionAdapter(ctx context.Context) (ports.Data
 	return txAdapter, nil
 }
 
+// Commit checks if the context has been canceled before commiting the transaction
 func (a *PostgresAdapter) Commit(ctx context.Context) error {
-	return a.tx.Commit(ctx)
+	select {
+	case <-ctx.Done():
+		ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+		defer cancel()
+
+		return a.tx.Rollback(ctx)
+	default:
+		return a.tx.Commit(ctx)
+	}
 }
 
+// Rollback initiates a transaction rollback
 func (a *PostgresAdapter) Rollback(ctx context.Context) error {
 	return a.tx.Rollback(ctx)
 }

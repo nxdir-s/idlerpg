@@ -31,6 +31,7 @@ type GameEngine struct {
 	isPaused bool
 }
 
+// NewGameEngine creates a GameEngine
 func NewGameEngine(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
 	return &GameEngine{
 		kafka:   kafka,
@@ -40,6 +41,7 @@ func NewGameEngine(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
 	}
 }
 
+// Start runs the game server
 func (ngin *GameEngine) Start(ctx context.Context) {
 	for {
 		select {

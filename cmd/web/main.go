@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -24,7 +23,7 @@ func main() {
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "error creating listener: %v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create tcp listener: %s\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -32,7 +31,7 @@ func main() {
 
 	ws, err := server.NewWebServer()
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "error creating web server: %v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create web server: %s\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -53,15 +52,18 @@ func main() {
 
 	select {
 	case <-ctx.Done():
-		fmt.Fprintf(os.Stdout, "context canceled: %+v\n", ctx.Err())
+		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 	case err := <-errChan:
-		fmt.Fprintf(os.Stdout, "failed to serve: %+v\n", err)
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "failed to serve: %+v\n", err)
+		}
 	}
 
 	ctx, timeout := context.WithTimeout(ctx, time.Second*10)
 	defer timeout()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("error shutting down server: %+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to shutdown server: %s\n", err.Error())
+		os.Exit(1)
 	}
 }

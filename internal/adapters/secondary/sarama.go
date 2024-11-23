@@ -41,7 +41,7 @@ type ConsumerError struct {
 }
 
 func (e *ConsumerError) Error() string {
-	return "failed to start sarama consumer group: " + e.err.Error()
+	return "error starting sarama consumer group: " + e.err.Error()
 }
 
 type CloseError struct {
@@ -58,7 +58,7 @@ type ProducerError struct {
 }
 
 func (e *ProducerError) Error() string {
-	return "failed to start sarama producer: " + e.err.Error()
+	return "error starting sarama producer: " + e.err.Error()
 }
 
 type SaramaHandler struct {
@@ -117,11 +117,6 @@ type SaramaAdapter struct {
 }
 
 func NewSaramaAdapter(brokers []string) (*SaramaAdapter, error) {
-	// On the broker side, you can change the following settings to get
-	// stronger consistency guarantees:
-	// - For your broker, set `unclean.leader.election.enable` to false
-	// - For the topic, you could increase `min.insync.replicas`.
-
 	producer, err := sarama.NewSyncProducer(brokers, NewSyncProducerCfg())
 	if err != nil {
 		return nil, &ProducerError{err}

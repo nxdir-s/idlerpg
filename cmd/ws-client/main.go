@@ -25,7 +25,6 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
-
 	for range MaxClients {
 		wg.Add(1)
 		go startWS(ctx, &wg, os.Args[1])
@@ -52,14 +51,14 @@ func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
 		default:
 			msgType, r, err := conn.Reader(ctx)
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "error getting reader from connection: %+v\n", err)
+				fmt.Fprintf(os.Stdout, "error getting reader from connection: %s\n", err.Error())
 				return
 			}
 
 			var msg []byte
 			msg, err = io.ReadAll(r)
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "error reading message: %+v\n", err)
+				fmt.Fprintf(os.Stdout, "error reading message: %s\n", err.Error())
 				return
 			}
 
