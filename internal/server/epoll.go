@@ -17,7 +17,7 @@ type EpollError struct {
 }
 
 func (e *EpollError) Error() string {
-	return "failed to create epoll: " + e.err.Error()
+	return "error creating epoll: " + e.err.Error()
 }
 
 type Epoll struct {

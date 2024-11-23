@@ -73,6 +73,7 @@ type ConsumeHandler interface {
 	Reset()
 }
 
+// NewSyncProducerCfg creates a producer config
 func NewSyncProducerCfg() *sarama.Config {
 	config := sarama.NewConfig()
 
@@ -85,6 +86,7 @@ func NewSyncProducerCfg() *sarama.Config {
 	return config
 }
 
+// NewConsumerCfg creates a consumer config
 func NewConsumerCfg(strategy string) (*sarama.Config, error) {
 	config := sarama.NewConfig()
 
@@ -116,6 +118,7 @@ type SaramaAdapter struct {
 	pauseConsumption bool
 }
 
+// NewSaramaAdapter creates a SaramaAdapter set up for producing and consuming kafka messages
 func NewSaramaAdapter(brokers []string) (*SaramaAdapter, error) {
 	producer, err := sarama.NewSyncProducer(brokers, NewSyncProducerCfg())
 	if err != nil {

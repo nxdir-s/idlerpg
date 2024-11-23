@@ -88,8 +88,14 @@ func (gs *GameServer) listen(ctx context.Context) {
 			errChan := pipelines.FanIn(ctx, fanOut...)
 
 			for err := range errChan {
-				if err != nil {
-					fmt.Fprintf(os.Stdout, "error reading client message: %+v\n", err)
+				select {
+				case <-ctx.Done():
+					fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+					return
+				default:
+					if err != nil {
+						fmt.Fprintf(os.Stdout, "failed to read client message: %+v\n", err)
+					}
 				}
 			}
 		}

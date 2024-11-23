@@ -25,13 +25,13 @@ func main() {
 
 	var rLimit syscall.Rlimit
 	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to get RLIMIT: %s\n", err.Error())
 		os.Exit(1)
 	}
 
 	rLimit.Cur = rLimit.Max
 	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to set RLIMIT: %s\n", err.Error())
 		os.Exit(1)
 	}
 
