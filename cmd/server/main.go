@@ -61,7 +61,7 @@ func main() {
 	defer kafka.CloseProducer()
 
 	pool := server.NewPool()
-	ngin := engine.New(pool, kafka)
+	ngin := engine.NewGameEngine(pool, kafka)
 
 	epoll, err := server.NewEpoll(pool)
 	if err != nil {

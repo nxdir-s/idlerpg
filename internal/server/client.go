@@ -23,12 +23,10 @@ func (c *Client) SendMessage(ctx context.Context, msg *valobj.Message) error {
 	wr := wsutil.NewWriter(c.Conn, ws.StateServerSide, ws.OpText)
 
 	if err := json.NewEncoder(wr).Encode(msg); err != nil {
-		// fmt.Fprintf(os.Stdout, "error encoding message: %+v\n", err)
 		return err
 	}
 
 	if err := wr.Flush(); err != nil {
-		// fmt.Fprintf(os.Stdout, "error flushing writer: %+v\n", err)
 		return err
 	}
 

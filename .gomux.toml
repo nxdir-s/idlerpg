@@ -1,0 +1,12 @@
+session = 'idlerpg'
+start_index = 0
+
+[windows]
+
+[windows.editor]
+name = 'editor'
+cmd = ['vim .']
+
+[windows.docker]
+name = 'docker'
+cmd = ['docker compose up']

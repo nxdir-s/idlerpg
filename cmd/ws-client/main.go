@@ -15,12 +15,23 @@ const (
 	MaxClients int = 10
 )
 
-type ReadError struct {
-	err error
-}
+func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
-func (e ReadError) Error() string {
-	return "error reading from connection: " + e.err.Error()
+	if len(os.Args) < 2 {
+		fmt.Fprint(os.Stdout, "please provide an address\n")
+		os.Exit(1)
+	}
+
+	var wg sync.WaitGroup
+
+	for range MaxClients {
+		wg.Add(1)
+		go startWS(ctx, &wg, os.Args[1])
+	}
+
+	wg.Wait()
 }
 
 func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
@@ -63,23 +74,4 @@ func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
 			}
 		}
 	}
-}
-
-func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
-	if len(os.Args) < 2 {
-		fmt.Fprint(os.Stdout, "please provide an address\n")
-		os.Exit(1)
-	}
-
-	var wg sync.WaitGroup
-
-	for range MaxClients {
-		wg.Add(1)
-		go startWS(ctx, &wg, os.Args[1])
-	}
-
-	wg.Wait()
 }

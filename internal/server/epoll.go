@@ -87,8 +87,7 @@ func (e *Epoll) add(conn net.Conn) error {
 		return err
 	}
 
-	err = unix.SetNonblock(fd, true)
-	if err != nil {
+	if err := unix.SetNonblock(fd, true); err != nil {
 		return err
 	}
 
@@ -97,8 +96,7 @@ func (e *Epoll) add(conn net.Conn) error {
 		Fd:     int32(fd),
 	}
 
-	err = unix.EpollCtl(e.fd, unix.EPOLL_CTL_ADD, fd, &event)
-	if err != nil {
+	if err := unix.EpollCtl(e.fd, unix.EPOLL_CTL_ADD, fd, &event); err != nil {
 		return err
 	}
 
@@ -120,8 +118,7 @@ func (e *Epoll) remove(client *Client) error {
 
 	e.pool.Remove <- client.Fd
 
-	err = unix.EpollCtl(e.fd, unix.EPOLL_CTL_DEL, fd, nil)
-	if err != nil {
+	if err := unix.EpollCtl(e.fd, unix.EPOLL_CTL_DEL, fd, nil); err != nil {
 		return err
 	}
 
