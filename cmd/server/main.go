@@ -38,7 +38,7 @@ func main() {
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create tcp listener: %s\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -55,7 +55,7 @@ func main() {
 	var kafka ports.KafkaPort
 	kafka, err = secondary.NewSaramaAdapter(strings.Split(brokerStr, ","))
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
 	}
 	defer kafka.CloseProducer()
@@ -65,7 +65,7 @@ func main() {
 
 	epoll, err := server.NewEpoll(pool)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create epoll: %+v\n", err)
+		fmt.Fprintf(os.Stdout, "failed to create epoll: %s\n", err.Error())
 		os.Exit(1)
 	}
 
@@ -77,7 +77,7 @@ func main() {
 
 	select {
 	case <-ctx.Done():
-		fmt.Fprintf(os.Stdout, "context canceled: %+v\n", ctx.Err())
+		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 		os.Exit(0)
 	}
 }
