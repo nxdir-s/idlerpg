@@ -51,6 +51,7 @@ func (p *Pool) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 			return
 		case client := <-p.Register:
 			// using counter for testing
@@ -95,8 +96,14 @@ func (p *Pool) Start(ctx context.Context) {
 			errChan := pipelines.FanIn(ctx, fanOut...)
 
 			for err := range errChan {
-				if err != nil {
-					fmt.Fprintf(os.Stdout, "error sending message to client: %+v\n", err)
+				select {
+				case <-ctx.Done():
+					fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+					return
+				default:
+					if err != nil {
+						fmt.Fprintf(os.Stdout, "failed to send message to client: %+v\n", err)
+					}
 				}
 			}
 

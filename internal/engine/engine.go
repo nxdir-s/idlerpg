@@ -96,13 +96,20 @@ func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Cli
 	errChan := pipelines.FanIn(ctx, kafkaFanOut...)
 
 	for err := range errChan {
-		if err != nil {
-			// TODO: figure out how to handle replays. Maybe dlq?
-			fmt.Fprintf(os.Stdout, "error sending player event: %s\n", err.Error())
+		select {
+		case <-ctx.Done():
+			fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+			return
+		default:
+			if err != nil {
+				// TODO: figure out how to handle replays. Maybe dlq?
+				fmt.Fprintf(os.Stdout, "error sending player event: %s\n", err.Error())
+			}
 		}
 	}
 }
 
+// Simulate simulates player actions
 func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *pb.PlayerEvent {
 	fmt.Fprint(os.Stdout, "running simulation...\n")
 

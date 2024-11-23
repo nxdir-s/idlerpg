@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
+	"os"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -37,12 +39,15 @@ func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) error {
 	for {
 		select {
 		case <-ctx.Done():
+			fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 			return nil
 		default:
 			header, err := ws.ReadHeader(c.Conn)
 			if err != nil {
 				if err == io.EOF {
+					fmt.Fprint(os.Stdout, "client disconnected\n")
 					epoller.Remove <- c
+
 					return nil
 				}
 
