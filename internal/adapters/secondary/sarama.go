@@ -106,10 +106,6 @@ func (e *ErrNilConsumer) Error() string {
 	return "error, nil consumer in SaramaAdapter"
 }
 
-type SaramaHandler struct {
-	Ready chan bool
-}
-
 type ConsumeHandler interface {
 	Setup(session sarama.ConsumerGroupSession) error
 	Cleanup(session sarama.ConsumerGroupSession) error
