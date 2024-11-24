@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/nxdir-s/IdleRpg/internal/core/entity/players"
+	"github.com/nxdir-s/idlerpg/internal/core/entity/players"
 )
 
 type Player struct {

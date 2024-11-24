@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
-	"github.com/nxdir-s/IdleRpg/internal/ports"
-	"github.com/nxdir-s/IdleRpg/internal/server"
-	pb "github.com/nxdir-s/IdleRpg/protobuf"
+	"github.com/nxdir-s/idlerpg/internal/core/valobj"
+	"github.com/nxdir-s/idlerpg/internal/ports"
+	"github.com/nxdir-s/idlerpg/internal/server"
+	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/nxdir-s/pipelines"
 )
 
@@ -110,12 +110,12 @@ func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Cli
 }
 
 // Simulate simulates player actions
-func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *pb.PlayerEvent {
+func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *protobuf.PlayerEvent {
 	fmt.Fprint(os.Stdout, "running simulation...\n")
 
-	return &pb.PlayerEvent{
+	return &protobuf.PlayerEvent{
 		Plid:   client.Player.Plid,
-		Action: pb.Action(int32(client.Player.Action)),
+		Action: protobuf.Action(int32(client.Player.Action)),
 		Exp:    rand.Int31n(MaxRandExp),
 	}
 }

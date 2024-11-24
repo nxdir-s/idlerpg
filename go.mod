@@ -1,4 +1,4 @@
-module github.com/nxdir-s/IdleRpg
+module github.com/nxdir-s/idlerpg
 
 go 1.22.0
 

@@ -1,6 +1,6 @@
 package primary
 
-import "github.com/nxdir-s/IdleRpg/internal/ports"
+import "github.com/nxdir-s/idlerpg/internal/ports"
 
 type EngineAdapter struct {
 	players ports.PlayersPort

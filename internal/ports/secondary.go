@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	pb "github.com/nxdir-s/IdleRpg/protobuf"
+	pb "github.com/nxdir-s/idlerpg/protobuf"
 )
 
 type KafkaPort interface {

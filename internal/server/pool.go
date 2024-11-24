@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"github.com/nxdir-s/pipelines"
 	"golang.org/x/sys/unix"
 )

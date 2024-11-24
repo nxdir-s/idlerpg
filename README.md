@@ -1,3 +1,3 @@
 # IdleRpg
 
-This repository contains the game and web servers for IdleRpg
+IdleRpg is a free to play web based Rpg written entirely using Golang
