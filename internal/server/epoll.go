@@ -29,7 +29,7 @@ type Epoll struct {
 }
 
 // NewEpoll creates an Epoll
-func NewEpoll(pool *Pool) (*Epoll, error) {
+func NewEpoll(ctx context.Context, pool *Pool) (*Epoll, error) {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
 		return nil, &EpollError{err}

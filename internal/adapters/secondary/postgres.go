@@ -11,11 +11,11 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/ports"
 )
 
-type ConnectionError struct {
+type ErrConnect struct {
 	err error
 }
 
-func (e *ConnectionError) Error() string {
+func (e *ErrConnect) Error() string {
 	return "error creating connection pool: " + e.err.Error()
 }
 
@@ -29,7 +29,7 @@ type PgxPool interface {
 func NewPgxPool(ctx context.Context, dbUrl string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, dbUrl)
 	if err != nil {
-		return nil, &ConnectionError{err}
+		return nil, &ErrConnect{err}
 	}
 
 	return pool, nil
@@ -55,7 +55,7 @@ type PostgresAdapter struct {
 	logger *slog.Logger
 }
 
-// NewPostgresAdapter creates a postgres adapter using the supplied options
+// NewPostgresAdapter creates a new PostgresAdapter
 func NewPostgresAdapter(ctx context.Context, pool PgxPool, logger *slog.Logger, opts ...PostgresOpt) (*PostgresAdapter, error) {
 	adapter := &PostgresAdapter{
 		conn:   pool,

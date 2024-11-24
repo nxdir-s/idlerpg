@@ -1,6 +1,7 @@
 package consumers
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -11,7 +12,8 @@ type EngineConsumer struct {
 	Ready chan bool
 }
 
-func NewEngineConsumer() (*EngineConsumer, error) {
+// NewEngineConsumer creates a new EngineConsumer
+func NewEngineConsumer(ctx context.Context) (*EngineConsumer, error) {
 	return &EngineConsumer{
 		Ready: make(chan bool),
 	}, nil
@@ -37,19 +39,16 @@ func (c *EngineConsumer) Cleanup(sarama.ConsumerGroupSession) error {
 	return nil
 }
 
-// ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
-// Once the Messages() channel is closed, the Handler must finish its processing
-// loop and exit.
 func (c *EngineConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for {
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				fmt.Fprint(os.Stdout, "message channel was closed\n")
+				fmt.Fprint(os.Stdout, "message channel was closed...\n")
 				return nil
 			}
 
-			fmt.Fprintf(os.Stdout, "Message claimed: value = %s, timestamp = %v, topic = %s\n", string(message.Value), message.Timestamp, message.Topic)
+			fmt.Fprintf(os.Stdout, "message claimed: value = %s, timestamp = %v, topic = %s\n", string(message.Value), message.Timestamp, message.Topic)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
 			return nil

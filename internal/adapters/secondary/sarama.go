@@ -22,45 +22,76 @@ const (
 	PlayerEventsTopic string = "player-events"
 )
 
-type ConfigError struct {
+type ErrSaramaCfg struct {
 	err error
 }
 
-func (e *ConfigError) Error() string {
+func (e *ErrSaramaCfg) Error() string {
 	return "error creating sarama config: " + e.err.Error()
 }
 
-type StrategyError struct {
+type ErrUnknownStrategy struct {
 	strategy string
 }
 
-func (e *StrategyError) Error() string {
+func (e *ErrUnknownStrategy) Error() string {
 	return "unrecognized consumer group partition assignor: " + e.strategy
 }
 
-type ConsumerError struct {
+type ErrConsumerStart struct {
 	err error
 }
 
-func (e *ConsumerError) Error() string {
+func (e *ErrConsumerStart) Error() string {
 	return "error starting sarama consumer group: " + e.err.Error()
 }
 
-type CloseError struct {
-	clientType string
-	err        error
-}
-
-func (e *CloseError) Error() string {
-	return "error closing " + e.clientType + " client: " + e.err.Error()
-}
-
-type ProducerError struct {
+type ErrProducerStart struct {
 	err error
 }
 
-func (e *ProducerError) Error() string {
+func (e *ErrProducerStart) Error() string {
 	return "error starting sarama producer: " + e.err.Error()
+}
+
+type ErrCloseConsumer struct {
+	err error
+}
+
+func (e *ErrCloseConsumer) Error() string {
+	return "error closing consumer: " + e.err.Error()
+}
+
+type ErrCloseProducer struct {
+	err error
+}
+
+func (e *ErrCloseProducer) Error() string {
+	return "error closing producer: " + e.err.Error()
+}
+
+type ErrProtoMarshal struct {
+	err error
+}
+
+func (e *ErrProtoMarshal) Error() string {
+	return "failed to marshal protobuf: " + e.err.Error()
+}
+
+type ErrSendMesssage struct {
+	err error
+}
+
+func (e *ErrSendMesssage) Error() string {
+	return "failed to send kafka message: " + e.err.Error()
+}
+
+type ErrConsumeMessage struct {
+	err error
+}
+
+func (e *ErrConsumeMessage) Error() string {
+	return "failed to consume kafka message: " + e.err.Error()
 }
 
 type ErrNilProducer struct{}
@@ -115,7 +146,7 @@ func NewConsumerCfg(strategy string) (*sarama.Config, error) {
 	case "range":
 		config.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRange()}
 	default:
-		return nil, &StrategyError{}
+		return nil, &ErrUnknownStrategy{strategy}
 	}
 
 	return config, nil
@@ -123,16 +154,17 @@ func NewConsumerCfg(strategy string) (*sarama.Config, error) {
 
 type SaramaAdapterOpt func(a *SaramaAdapter) error
 
+// WithConsumer adds a sarama.ConsumerGroup to the adapter
 func WithConsumer() SaramaAdapterOpt {
 	return func(a *SaramaAdapter) error {
 		cfg, err := NewConsumerCfg(DefaultStrategy)
 		if err != nil {
-			return &ConfigError{err}
+			return &ErrSaramaCfg{err}
 		}
 
 		consumer, err := sarama.NewConsumerGroup(a.brokers, "", cfg)
 		if err != nil {
-			return &ConsumerError{err}
+			return &ErrConsumerStart{err}
 		}
 		a.consumer = consumer
 
@@ -140,11 +172,12 @@ func WithConsumer() SaramaAdapterOpt {
 	}
 }
 
+// WithProducer adds a sarama.SyncProducer to the adapter
 func WithProducer() SaramaAdapterOpt {
 	return func(a *SaramaAdapter) error {
 		producer, err := sarama.NewSyncProducer(a.brokers, NewSyncProducerCfg())
 		if err != nil {
-			return &ProducerError{err}
+			return &ErrProducerStart{err}
 		}
 		a.producer = producer
 
@@ -158,15 +191,15 @@ type SaramaAdapter struct {
 
 	brokers []string
 
-	sigUsr1     chan os.Signal
-	sigTerm     chan os.Signal
-	keepRunning bool
+	sigUsr1 chan os.Signal
+	sigTerm chan os.Signal
 
-	paused bool
+	keepRunning bool
+	paused      bool
 }
 
 // NewSaramaAdapter creates a SaramaAdapter set up for producing and consuming kafka messages
-func NewSaramaAdapter(brokers []string, opts ...SaramaAdapterOpt) (*SaramaAdapter, error) {
+func NewSaramaAdapter(ctx context.Context, brokers []string, opts ...SaramaAdapterOpt) (*SaramaAdapter, error) {
 	sigusr1 := make(chan os.Signal, 1)
 	signal.Notify(sigusr1, syscall.SIGUSR1)
 
@@ -196,7 +229,7 @@ func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *protobuf.Pla
 
 	data, err := proto.Marshal(event)
 	if err != nil {
-		return err
+		return &ErrProtoMarshal{err}
 	}
 
 	_, _, err = a.producer.SendMessage(&sarama.ProducerMessage{
@@ -204,20 +237,26 @@ func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *protobuf.Pla
 		Value: sarama.ByteEncoder(data),
 	})
 	if err != nil {
-		return err
+		return &ErrSendMesssage{err}
 	}
 
 	return nil
 }
 
+// CloseProducer closes the sarama producer
 func (a *SaramaAdapter) CloseProducer() error {
 	if a.producer == nil {
 		return &ErrNilProducer{}
 	}
 
-	return a.producer.Close()
+	if err := a.producer.Close(); err != nil {
+		return &ErrCloseProducer{err}
+	}
+
+	return nil
 }
 
+// Consume starts the sarama consumer
 func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, topics []string) error {
 	if a.consumer == nil {
 		return &ErrNilConsumer{}
@@ -243,7 +282,6 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 				return
 			}
 
-			// check if context was cancelled, signaling that the consumer should stop
 			if ctx.Err() != nil {
 				return
 			}
@@ -254,15 +292,15 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 
 	handler.AwaitSetup()
 
-	fmt.Fprint(os.Stdout, "sarama consumer up and running...\n")
+	fmt.Fprint(os.Stdout, "sarama consumer up and running!\n")
 
 	for a.keepRunning {
 		select {
 		case <-ctx.Done():
-			fmt.Fprint(os.Stdout, "terminating: context cancelled...\n")
+			fmt.Fprint(os.Stdout, "consumer terminating: context cancelled...\n")
 			a.keepRunning = false
 		case <-a.sigTerm:
-			fmt.Fprint(os.Stdout, "terminating via signal...\n")
+			fmt.Fprint(os.Stdout, "consumer terminating via signal...\n")
 			a.keepRunning = false
 		case <-a.sigUsr1:
 			a.toggleConsumption()
@@ -273,11 +311,11 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 	wg.Wait()
 
 	if consumeErr != nil {
-		return consumeErr
+		return &ErrConsumeMessage{consumeErr}
 	}
 
 	if err := a.consumer.Close(); err != nil {
-		return &CloseError{"consumer", err}
+		return &ErrCloseConsumer{err}
 	}
 
 	return nil

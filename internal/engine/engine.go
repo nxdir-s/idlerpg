@@ -32,7 +32,7 @@ type GameEngine struct {
 }
 
 // NewGameEngine creates a GameEngine
-func NewGameEngine(pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
+func NewGameEngine(ctx context.Context, pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
 	return &GameEngine{
 		kafka:   kafka,
 		pool:    pool,
