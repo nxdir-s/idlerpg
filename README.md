@@ -1,3 +1,3 @@
 # IdleRpg
 
-IdleRpg is a free to play web based Rpg written using Golang (WIP)
+IdleRpg is a free to play web based RPG written using Golang (WIP)
