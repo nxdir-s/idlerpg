@@ -53,7 +53,7 @@ func main() {
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithConsumer(), secondary.WithProducer())
+	kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithSaramaConsumer(), secondary.WithSaramaProducer())
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
