@@ -17,7 +17,6 @@ import (
 type Client struct {
 	Conn   net.Conn
 	Fd     int
-	Msgs   chan *valobj.Message
 	Player *entity.Player
 }
 

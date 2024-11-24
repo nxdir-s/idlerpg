@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/nxdir-s/idlerpg/internal/core/entity"
-	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"golang.org/x/sys/unix"
 )
 
@@ -43,6 +42,7 @@ func NewEpoll(ctx context.Context, pool *Pool) (*Epoll, error) {
 	}, nil
 }
 
+// Start adds and removes connections from Epoll
 func (e *Epoll) Start(ctx context.Context) {
 	for {
 		select {
@@ -60,6 +60,7 @@ func (e *Epoll) Start(ctx context.Context) {
 	}
 }
 
+// Wait listens for new epoll events
 func (e *Epoll) Wait() ([]*Client, error) {
 	events := make([]unix.EpollEvent, 100)
 
@@ -104,7 +105,6 @@ func (e *Epoll) add(conn net.Conn) error {
 	e.pool.Register <- &Client{
 		Conn:   conn,
 		Fd:     fd,
-		Msgs:   make(chan *valobj.Message),
 		Player: entity.NewPlayer(),
 	}
 

@@ -3,11 +3,11 @@ package ports
 import (
 	"context"
 
-	pb "github.com/nxdir-s/idlerpg/protobuf"
+	"github.com/nxdir-s/idlerpg/protobuf"
 )
 
 type KafkaPort interface {
-	SendPlayerEvent(ctx context.Context, event *pb.PlayerEvent) error
+	SendPlayerEvent(ctx context.Context, event *protobuf.PlayerEvent) error
 	CloseProducer() error
 }
 
