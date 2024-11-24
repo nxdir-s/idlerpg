@@ -1,4 +1,4 @@
-## Usage: ./scripts/setup.sh <connections> <number of clients> <server ip>
+## Usage: ./scripts/docker/setup.sh <connections> <number of clients> <server ip>
 CONNECTIONS=$1
 REPLICAS=$2
 IP=$3
