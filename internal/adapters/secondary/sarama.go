@@ -154,8 +154,8 @@ func NewConsumerCfg(strategy string) (*sarama.Config, error) {
 
 type SaramaAdapterOpt func(a *SaramaAdapter) error
 
-// WithConsumer adds a sarama.ConsumerGroup to the adapter
-func WithConsumer() SaramaAdapterOpt {
+// WithSaramaConsumer adds a sarama.ConsumerGroup to the adapter
+func WithSaramaConsumer() SaramaAdapterOpt {
 	return func(a *SaramaAdapter) error {
 		cfg, err := NewConsumerCfg(DefaultStrategy)
 		if err != nil {
@@ -172,8 +172,8 @@ func WithConsumer() SaramaAdapterOpt {
 	}
 }
 
-// WithProducer adds a sarama.SyncProducer to the adapter
-func WithProducer() SaramaAdapterOpt {
+// WithSaramaProducer adds a sarama.SyncProducer to the adapter
+func WithSaramaProducer() SaramaAdapterOpt {
 	return func(a *SaramaAdapter) error {
 		producer, err := sarama.NewSyncProducer(a.brokers, NewSyncProducerCfg())
 		if err != nil {
