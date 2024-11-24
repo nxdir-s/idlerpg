@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/IBM/sarama"
-	pb "github.com/nxdir-s/IdleRpg/protobuf"
+	"github.com/nxdir-s/idlerpg/protobuf"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -18,6 +18,8 @@ const (
 	ProducerMaxRetry   int    = 10
 	DefaultStrategy    string = "roundrobin"
 	DefaultKeepRunning bool   = true
+
+	PlayerEventsTopic string = "player-events"
 )
 
 type ConfigError struct {
@@ -59,6 +61,18 @@ type ProducerError struct {
 
 func (e *ProducerError) Error() string {
 	return "error starting sarama producer: " + e.err.Error()
+}
+
+type ErrNilProducer struct{}
+
+func (e *ErrNilProducer) Error() string {
+	return "error, nil producer in SaramaAdapter"
+}
+
+type ErrNilConsumer struct{}
+
+func (e *ErrNilConsumer) Error() string {
+	return "error, nil consumer in SaramaAdapter"
 }
 
 type SaramaHandler struct {
@@ -107,58 +121,86 @@ func NewConsumerCfg(strategy string) (*sarama.Config, error) {
 	return config, nil
 }
 
+type SaramaAdapterOpt func(a *SaramaAdapter) error
+
+func WithConsumer() SaramaAdapterOpt {
+	return func(a *SaramaAdapter) error {
+		cfg, err := NewConsumerCfg(DefaultStrategy)
+		if err != nil {
+			return &ConfigError{err}
+		}
+
+		consumer, err := sarama.NewConsumerGroup(a.brokers, "", cfg)
+		if err != nil {
+			return &ConsumerError{err}
+		}
+		a.consumer = consumer
+
+		return nil
+	}
+}
+
+func WithProducer() SaramaAdapterOpt {
+	return func(a *SaramaAdapter) error {
+		producer, err := sarama.NewSyncProducer(a.brokers, NewSyncProducerCfg())
+		if err != nil {
+			return &ProducerError{err}
+		}
+		a.producer = producer
+
+		return nil
+	}
+}
+
 type SaramaAdapter struct {
 	producer sarama.SyncProducer
 	consumer sarama.ConsumerGroup
+
+	brokers []string
 
 	sigUsr1     chan os.Signal
 	sigTerm     chan os.Signal
 	keepRunning bool
 
-	pauseConsumption bool
+	paused bool
 }
 
 // NewSaramaAdapter creates a SaramaAdapter set up for producing and consuming kafka messages
-func NewSaramaAdapter(brokers []string) (*SaramaAdapter, error) {
-	producer, err := sarama.NewSyncProducer(brokers, NewSyncProducerCfg())
-	if err != nil {
-		return nil, &ProducerError{err}
-	}
-
-	cfg, err := NewConsumerCfg(DefaultStrategy)
-	if err != nil {
-		return nil, &ConfigError{err}
-	}
-
-	consumer, err := sarama.NewConsumerGroup(brokers, "", cfg)
-	if err != nil {
-		return nil, &ConsumerError{}
-	}
-
+func NewSaramaAdapter(brokers []string, opts ...SaramaAdapterOpt) (*SaramaAdapter, error) {
 	sigusr1 := make(chan os.Signal, 1)
 	signal.Notify(sigusr1, syscall.SIGUSR1)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
 
-	return &SaramaAdapter{
-		producer:    producer,
-		consumer:    consumer,
+	adapter := &SaramaAdapter{
 		sigUsr1:     sigusr1,
 		sigTerm:     sigterm,
 		keepRunning: DefaultKeepRunning,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		if err := opt(adapter); err != nil {
+			return nil, err
+		}
+	}
+
+	return adapter, nil
 }
 
 // SendPlayerEvent marshals and sends player events to kafka
-func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *pb.PlayerEvent) error {
+func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *protobuf.PlayerEvent) error {
+	if a.producer == nil {
+		return &ErrNilProducer{}
+	}
+
 	data, err := proto.Marshal(event)
 	if err != nil {
 		return err
 	}
 
 	_, _, err = a.producer.SendMessage(&sarama.ProducerMessage{
-		Topic: "player-events",
+		Topic: PlayerEventsTopic,
 		Value: sarama.ByteEncoder(data),
 	})
 	if err != nil {
@@ -169,10 +211,18 @@ func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *pb.PlayerEve
 }
 
 func (a *SaramaAdapter) CloseProducer() error {
+	if a.producer == nil {
+		return &ErrNilProducer{}
+	}
+
 	return a.producer.Close()
 }
 
 func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, topics []string) error {
+	if a.consumer == nil {
+		return &ErrNilConsumer{}
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	var wg sync.WaitGroup
@@ -204,15 +254,15 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 
 	handler.AwaitSetup()
 
-	fmt.Fprintf(os.Stdout, "sarama consumer up and running...\n")
+	fmt.Fprint(os.Stdout, "sarama consumer up and running...\n")
 
 	for a.keepRunning {
 		select {
 		case <-ctx.Done():
-			fmt.Fprintf(os.Stdout, "terminating: context cancelled\n")
+			fmt.Fprint(os.Stdout, "terminating: context cancelled...\n")
 			a.keepRunning = false
 		case <-a.sigTerm:
-			fmt.Fprintf(os.Stdout, "terminating via signal\n")
+			fmt.Fprint(os.Stdout, "terminating via signal...\n")
 			a.keepRunning = false
 		case <-a.sigUsr1:
 			a.toggleConsumption()
@@ -234,15 +284,14 @@ func (a *SaramaAdapter) Consume(ctx context.Context, handler ConsumeHandler, top
 }
 
 func (a *SaramaAdapter) toggleConsumption() {
-	if a.pauseConsumption {
+	switch a.paused {
+	case true:
 		a.consumer.ResumeAll()
-		fmt.Fprintf(os.Stdout, "resuming consumption...\n")
-	}
-
-	if !a.pauseConsumption {
+		fmt.Fprint(os.Stdout, "resuming consumption...\n")
+	case false:
 		a.consumer.PauseAll()
-		fmt.Fprintf(os.Stdout, "pausing consumption...\n")
+		fmt.Fprint(os.Stdout, "pausing consumption...\n")
 	}
 
-	a.pauseConsumption = !a.pauseConsumption
+	a.paused = !a.paused
 }

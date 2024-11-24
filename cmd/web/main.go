@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/nxdir-s/IdleRpg/web/server"
+	"github.com/nxdir-s/idlerpg/web/server"
 )
 
 const (
@@ -55,7 +55,7 @@ func main() {
 		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 	case err := <-errChan:
 		if err != nil {
-			fmt.Fprintf(os.Stdout, "failed to serve: %+v\n", err)
+			fmt.Fprintf(os.Stdout, "failed to serve: %s\n", err.Error())
 		}
 	}
 

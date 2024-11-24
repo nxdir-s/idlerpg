@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/nxdir-s/IdleRpg/internal/ports"
+import "github.com/nxdir-s/idlerpg/internal/ports"
 
 type Players struct {
 	service ports.PlayerServicePort

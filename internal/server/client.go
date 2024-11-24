@@ -10,8 +10,8 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
-	"github.com/nxdir-s/IdleRpg/internal/core/entity"
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
+	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 )
 
 type Client struct {
@@ -45,7 +45,7 @@ func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) error {
 			header, err := ws.ReadHeader(c.Conn)
 			if err != nil {
 				if err == io.EOF {
-					fmt.Fprint(os.Stdout, "client disconnected\n")
+					fmt.Fprintf(os.Stdout, "%d disconnected...\n", c.Player.Plid)
 					epoller.Remove <- c
 
 					return nil

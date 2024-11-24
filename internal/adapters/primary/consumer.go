@@ -1,7 +1,7 @@
 package primary
 
 import (
-	"github.com/nxdir-s/IdleRpg/internal/ports"
+	"github.com/nxdir-s/idlerpg/internal/ports"
 )
 
 type ConsumerAdapter struct {

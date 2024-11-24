@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nxdir-s/IdleRpg/internal/ports"
+	"github.com/nxdir-s/idlerpg/internal/ports"
 )
 
 type ConnectionError struct {
@@ -16,7 +16,7 @@ type ConnectionError struct {
 }
 
 func (e *ConnectionError) Error() string {
-	return "unable to create connection pool: " + e.err.Error()
+	return "error creating connection pool: " + e.err.Error()
 }
 
 type PgxPool interface {

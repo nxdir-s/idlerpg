@@ -7,8 +7,8 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/nxdir-s/IdleRpg/internal/core/entity"
-	"github.com/nxdir-s/IdleRpg/internal/core/valobj"
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
+	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"golang.org/x/sys/unix"
 )
 
@@ -28,6 +28,7 @@ type Epoll struct {
 	Remove chan *Client
 }
 
+// NewEpoll creates an Epoll
 func NewEpoll(pool *Pool) (*Epoll, error) {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {

@@ -2,11 +2,9 @@ package ports
 
 import "context"
 
-type PlayersPort interface {
-}
+type PlayersPort interface{}
 
-type PlayerServicePort interface {
-}
+type PlayerServicePort interface{}
 
 type PlayerTxServicePort interface {
 	PlayerServicePort

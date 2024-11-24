@@ -38,7 +38,7 @@ func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
 
 	conn, _, err := websocket.Dial(ctx, addr, nil)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "error dialing websocket: %s\n", err.Error())
+		fmt.Fprintf(os.Stdout, "failed dialing websocket: %s\n", err.Error())
 		return
 	}
 	defer conn.CloseNow()
@@ -51,14 +51,14 @@ func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
 		default:
 			msgType, r, err := conn.Reader(ctx)
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "error getting reader from connection: %s\n", err.Error())
+				fmt.Fprintf(os.Stdout, "failed to get reader from connection: %s\n", err.Error())
 				return
 			}
 
 			var msg []byte
 			msg, err = io.ReadAll(r)
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "error reading message: %s\n", err.Error())
+				fmt.Fprintf(os.Stdout, "failed reading message: %s\n", err.Error())
 				return
 			}
 
@@ -68,7 +68,7 @@ func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
 			case websocket.MessageBinary:
 				fmt.Fprint(os.Stdout, "recieved binary message\n")
 			default:
-				fmt.Fprintf(os.Stdout, "unknown websocket frame type: %d", msgType)
+				fmt.Fprintf(os.Stdout, "unknown websocket frame type: %d\n", msgType)
 				return
 			}
 		}

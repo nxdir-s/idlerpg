@@ -9,10 +9,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/nxdir-s/IdleRpg/internal/adapters/secondary"
-	"github.com/nxdir-s/IdleRpg/internal/engine"
-	"github.com/nxdir-s/IdleRpg/internal/ports"
-	"github.com/nxdir-s/IdleRpg/internal/server"
+	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
+	"github.com/nxdir-s/idlerpg/internal/engine"
+	"github.com/nxdir-s/idlerpg/internal/ports"
+	"github.com/nxdir-s/idlerpg/internal/server"
 )
 
 const (
@@ -53,7 +53,7 @@ func main() {
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewSaramaAdapter(strings.Split(brokerStr, ","))
+	kafka, err = secondary.NewSaramaAdapter(strings.Split(brokerStr, ","), secondary.WithConsumer(), secondary.WithProducer())
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)

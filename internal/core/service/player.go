@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/nxdir-s/IdleRpg/internal/ports"
+	"github.com/nxdir-s/idlerpg/internal/ports"
 )
 
 type PlayerServiceOpt func(s *PlayerService)

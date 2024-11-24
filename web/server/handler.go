@@ -6,8 +6,7 @@ type ServerHandler func(http.ResponseWriter, *http.Request) error
 
 func httpHandler(fn ServerHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := fn(w, r)
-		if err != nil {
+		if err := fn(w, r); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
