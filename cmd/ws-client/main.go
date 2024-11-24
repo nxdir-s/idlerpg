@@ -38,7 +38,7 @@ func startWS(ctx context.Context, wg *sync.WaitGroup, addr string) {
 
 	conn, _, err := websocket.Dial(ctx, addr, nil)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed dialing websocket: %s\n", err.Error())
+		fmt.Fprintf(os.Stdout, "failed to dial websocket: %s\n", err.Error())
 		return
 	}
 	defer conn.CloseNow()
