@@ -53,17 +53,17 @@ func main() {
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewSaramaAdapter(strings.Split(brokerStr, ","), secondary.WithConsumer(), secondary.WithProducer())
+	kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithConsumer(), secondary.WithProducer())
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
 	}
 	defer kafka.CloseProducer()
 
-	pool := server.NewPool()
-	ngin := engine.NewGameEngine(pool, kafka)
+	pool := server.NewPool(ctx)
+	ngin := engine.NewGameEngine(ctx, pool, kafka)
 
-	epoll, err := server.NewEpoll(pool)
+	epoll, err := server.NewEpoll(ctx, pool)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create epoll: %s\n", err.Error())
 		os.Exit(1)

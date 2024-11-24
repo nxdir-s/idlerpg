@@ -36,7 +36,7 @@ type Snapshot struct {
 	Processed   chan bool
 }
 
-func NewPool() *Pool {
+func NewPool(ctx context.Context) *Pool {
 	return &Pool{
 		Connections: make(map[int]*Client),
 		Register:    make(chan *Client),

@@ -29,7 +29,7 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "listening on %v\n", listener.Addr())
 
-	ws, err := server.NewWebServer()
+	ws, err := server.NewWebServer(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create web server: %s\n", err.Error())
 		os.Exit(1)

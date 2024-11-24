@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"embed"
 	"html/template"
 	"io/fs"
@@ -42,7 +43,7 @@ type WebServer struct {
 }
 
 // NewWebServer creates a new WebServer
-func NewWebServer() (*WebServer, error) {
+func NewWebServer(ctx context.Context) (*WebServer, error) {
 	staticFS, err := fs.Sub(contentFS, "static")
 	if err != nil {
 		return nil, &FSError{"static", err}

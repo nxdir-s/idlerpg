@@ -19,7 +19,7 @@ type PlayerService struct {
 	tx ports.DatabaseTxPort
 }
 
-func NewPlayerService(database ports.DatabasePort, opts ...PlayerServiceOpt) (*PlayerService, error) {
+func NewPlayerService(ctx context.Context, database ports.DatabasePort, opts ...PlayerServiceOpt) (*PlayerService, error) {
 	service := &PlayerService{
 		db: database,
 	}
@@ -37,7 +37,7 @@ func (s *PlayerService) NewPlayerTxService(ctx context.Context) (ports.PlayerTxS
 		return nil, err
 	}
 
-	txService, err := NewPlayerService(txAdapter, WithTransaction(txAdapter))
+	txService, err := NewPlayerService(ctx, txAdapter, WithTransaction(txAdapter))
 	if err != nil {
 		return nil, err
 	}
