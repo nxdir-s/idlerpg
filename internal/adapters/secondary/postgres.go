@@ -84,7 +84,7 @@ func (a *PostgresAdapter) NewTransactionAdapter(ctx context.Context) (ports.Data
 	return txAdapter, nil
 }
 
-// Commit checks if the context has been canceled before commiting the transaction
+// Commit commits the transaction after checking if the context has been canceled
 func (a *PostgresAdapter) Commit(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
