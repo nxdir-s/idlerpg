@@ -12,6 +12,12 @@ import (
 )
 
 const (
+	_ int = iota
+	Dev
+	Prod
+)
+
+const (
 	AppName string = "idlerpg-web"
 
 	OtelServiceDev  string = AppName + "-dev"
@@ -43,16 +49,6 @@ const (
 	RegionEnvKey  string = "CDK_DEFAULT_REGION"
 
 	PipelineName string = AppName + "-pipeline"
-)
-
-const (
-	_ int = iota
-
-	DevEast
-	DevWest
-
-	ProdEast
-	ProdWest
 )
 
 type InfrastructureStackProps struct {
@@ -229,21 +225,17 @@ func envVars(region int) *map[string]*string {
 	}
 
 	switch region {
-	case DevEast:
+	case Dev:
 		// maps.Copy(baseDev, map[string]*string{
 		//     "EAST_ENV": jsii.String("example")
 		// })
 
 		return &baseDev
-	case DevWest:
-		return &baseDev
-	case ProdEast:
+	case Prod:
 		// maps.Copy(baseProd, map[string]*string{
 		//     "PROD_ENV": jsii.String("example")
 		// })
 
-		return &baseProd
-	case ProdWest:
 		return &baseProd
 	default:
 		return &map[string]*string{}
