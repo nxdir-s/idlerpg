@@ -19,6 +19,11 @@ type EpollEvent struct {
 	Resp   chan []*Client
 }
 
+type Snapshot struct {
+	Connections map[int]*Client
+	Processed   chan bool
+}
+
 type Pool struct {
 	Connections map[int]*Client
 
@@ -29,11 +34,6 @@ type Pool struct {
 	EpollEvents chan *EpollEvent
 
 	counter int32
-}
-
-type Snapshot struct {
-	Connections map[int]*Client
-	Processed   chan bool
 }
 
 func NewPool(ctx context.Context) *Pool {
