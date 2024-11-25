@@ -90,6 +90,8 @@ func (s *WebServer) parseTemplates(templates fs.FS, ext string, funcMap template
 		}
 
 		var name string
+		name = path
+
 		if NonRootTmplNames {
 			parts := strings.Split(path, string(os.PathSeparator))
 			name = strings.Join(parts[1:], string(os.PathSeparator))

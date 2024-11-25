@@ -11,11 +11,11 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-type EpollError struct {
+type ErrEpoll struct {
 	err error
 }
 
-func (e *EpollError) Error() string {
+func (e *ErrEpoll) Error() string {
 	return "error creating epoll: " + e.err.Error()
 }
 
@@ -31,7 +31,7 @@ type Epoll struct {
 func NewEpoll(ctx context.Context, pool *Pool) (*Epoll, error) {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
-		return nil, &EpollError{err}
+		return nil, &ErrEpoll{err}
 	}
 
 	return &Epoll{
