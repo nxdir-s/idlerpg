@@ -97,13 +97,13 @@ func (e *ErrConsumeMessage) Error() string {
 type ErrNilProducer struct{}
 
 func (e *ErrNilProducer) Error() string {
-	return "error, nil producer in SaramaAdapter"
+	return "nil producer in SaramaAdapter"
 }
 
 type ErrNilConsumer struct{}
 
 func (e *ErrNilConsumer) Error() string {
-	return "error, nil consumer in SaramaAdapter"
+	return "nil consumer in SaramaAdapter"
 }
 
 type ConsumeHandler interface {
