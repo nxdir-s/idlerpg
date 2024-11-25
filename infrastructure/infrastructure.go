@@ -23,7 +23,6 @@ const (
 	OtelServiceDev  string = AppName + "-dev"
 	OtelServiceProd string = AppName
 
-	ContainerName                   string = "IdleRpgWebContainer"
 	FargateServiceName              string = AppName + "-fargate-service"
 	FargateDesiredCount             int    = 1
 	FargateCapacityProvidersEnabled bool   = true
@@ -64,21 +63,21 @@ func NewInfrastructureStack(scope constructs.Construct, id string, props *Infras
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	vpc := stacks.NewVpc(stack, "ClusterVpc", &stacks.VpcProps{
+	vpc := stacks.NewVpc(stack, id+"Vpc", &stacks.VpcProps{
 		IpAddresses: VpcIpAddresses,
 	})
 
 	// Creates a new blue Target Group that routes traffic from the public Application Load Balancer (ALB) to the
 	// registered targets within the Target Group e.g. (EC2 instances, IP addresses, Lambda functions)
 	// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html
-	targetGroupBlue := stacks.NewTargetGroup(stack, "BlueTargetGroup", &stacks.TargetGroupProps{
+	targetGroupBlue := stacks.NewTargetGroup(stack, id+"TGB", &stacks.TargetGroupProps{
 		Name:       BlueTGName,
 		TargetType: elb.TargetType_IP,
 		Vpc:        vpc,
 		Port:       TcpPort,
 	})
 
-	targetGroupGreen := stacks.NewTargetGroup(stack, "GreenTargetGroup", &stacks.TargetGroupProps{
+	targetGroupGreen := stacks.NewTargetGroup(stack, id+"TGG", &stacks.TargetGroupProps{
 		Name:       GreenTGName,
 		TargetType: elb.TargetType_IP,
 		Vpc:        vpc,
@@ -86,24 +85,24 @@ func NewInfrastructureStack(scope constructs.Construct, id string, props *Infras
 	})
 
 	// Creates an Elastic Container Registry (ECR) image repository
-	imageRepo := stacks.NewEcrRepository(stack, "ImageRepo", &stacks.EcrRepositoryProps{
+	imageRepo := stacks.NewEcrRepository(stack, id+"Image", &stacks.EcrRepositoryProps{
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
-	ecsCluster := stacks.NewEcsCluster(stack, "EcsCluster", &stacks.EcsClusterProps{
+	ecsCluster := stacks.NewEcsCluster(stack, id+"Cluster", &stacks.EcsClusterProps{
 		Vpc:                            vpc,
 		EnableFargateCapacityProviders: FargateCapacityProvidersEnabled,
 	})
 
 	logDriver := stacks.NewLogDriver(stack, &stacks.LogDriverProps{
-		StreamPrefix: ContainerName,
+		StreamPrefix: id + "Container",
 		Mode:         ecs.AwsLogDriverMode_NON_BLOCKING,
 	})
 
-	taskDef := stacks.NewFargateTaskDefinition(stack, "FargateTaskDef", &stacks.FargateTaskDefinitionProps{
+	taskDef := stacks.NewFargateTaskDefinition(stack, id+"Def", &stacks.FargateTaskDefinitionProps{
 		ImageRepo:     imageRepo,
 		ImageTag:      LatestImage,
-		ContainerName: ContainerName,
+		ContainerName: id + "Container",
 		Port:          TcpPort,
 		LogDriver:     logDriver,
 		Cpu:           FargateCpu,
@@ -114,7 +113,7 @@ func NewInfrastructureStack(scope constructs.Construct, id string, props *Infras
 		},
 	})
 
-	fargateService := stacks.NewFargateService(stack, "FargateService", &stacks.FargateServiceProps{
+	fargateService := stacks.NewFargateService(stack, id+"Serv", &stacks.FargateServiceProps{
 		ServiceName:    FargateServiceName,
 		DesiredCount:   FargateDesiredCount,
 		TaskDefinition: taskDef,
@@ -130,7 +129,7 @@ func NewInfrastructureStack(scope constructs.Construct, id string, props *Infras
 	fargateService.AttachToApplicationTargetGroup(targetGroupBlue)
 
 	// Creates a Security Group for the Application Load Balancer (ALB)
-	albSg := stacks.NewAlbSecurityGroup(stack, "SecurityGroup", &stacks.SecurityGroupProps{
+	albSg := stacks.NewAlbSecurityGroup(stack, id+"SG", &stacks.SecurityGroupProps{
 		Vpc:           vpc,
 		Port:          TcpPort,
 		AllowOutbound: AllowOutboundRules,
@@ -138,14 +137,14 @@ func NewInfrastructureStack(scope constructs.Construct, id string, props *Infras
 		Description:   SgDescription,
 	})
 
-	publicAlb := stacks.NewAlb(stack, "PublicAlb", &stacks.AlbProps{
+	publicAlb := stacks.NewAlb(stack, id+"Alb", &stacks.AlbProps{
 		Vpc:            vpc,
 		SecurityGroups: albSg,
 		InternetFacing: AlbPublic,
 	})
 
 	// Adds a listener on port 80 to the ALB
-	albListener := publicAlb.AddListener(jsii.String("AlbListener80"), &elb.BaseApplicationListenerProps{
+	albListener := publicAlb.AddListener(jsii.String(id+"Listener"), &elb.BaseApplicationListenerProps{
 		Port: jsii.Number(TcpPort),
 		Open: jsii.Bool(AlbOpen),
 		DefaultTargetGroups: &[]elb.IApplicationTargetGroup{
@@ -153,7 +152,7 @@ func NewInfrastructureStack(scope constructs.Construct, id string, props *Infras
 		},
 	})
 
-	stacks.NewDeployPipelineStack(stack, "BuildPipeline", &stacks.PipelineNestedStackProps{
+	stacks.NewDeployPipelineStack(stack, id+"Pipeline", &stacks.PipelineNestedStackProps{
 		PipelineName:   PipelineName,
 		AppName:        props.name,
 		FargateService: fargateService,
