@@ -194,7 +194,7 @@ type SaramaAdapter struct {
 	paused      bool
 }
 
-// NewSaramaAdapter creates a SaramaAdapter set up for producing and consuming kafka messages
+// NewSaramaAdapter creates a SaramaAdapter set up for producing and/or consuming kafka messages
 func NewSaramaAdapter(ctx context.Context, brokers []string, opts ...SaramaAdapterOpt) (*SaramaAdapter, error) {
 	sigusr1 := make(chan os.Signal, 1)
 	signal.Notify(sigusr1, syscall.SIGUSR1)
