@@ -1,6 +1,6 @@
 module github.com/nxdir-s/idlerpg
 
-go 1.22.0
+go 1.23.3
 
 require (
 	github.com/IBM/sarama v1.43.3
