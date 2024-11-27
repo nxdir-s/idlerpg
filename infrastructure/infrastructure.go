@@ -214,7 +214,7 @@ func env() *awscdk.Environment {
 	// }
 }
 
-func envVars(region int) *map[string]*string {
+func envVars(env int) *map[string]*string {
 	baseDev := map[string]*string{
 		"OTEL_SERVICE_NAME": jsii.String(OtelServiceDev),
 	}
@@ -223,7 +223,7 @@ func envVars(region int) *map[string]*string {
 		"OTEL_SERVICE_NAME": jsii.String(OtelServiceProd),
 	}
 
-	switch region {
+	switch env {
 	case Dev:
 		// maps.Copy(baseDev, map[string]*string{
 		//     "EAST_ENV": jsii.String("example")
