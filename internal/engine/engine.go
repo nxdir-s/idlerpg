@@ -10,6 +10,7 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/server"
+	"github.com/nxdir-s/idlerpg/internal/util"
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/nxdir-s/pipelines"
 )
@@ -60,6 +61,8 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 			if ngin.isPaused {
 				break
 			}
+
+			defer util.Timer("Server Tick")()
 
 			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
 
