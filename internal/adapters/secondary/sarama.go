@@ -205,6 +205,7 @@ func NewSaramaAdapter(ctx context.Context, brokers []string, opts ...SaramaAdapt
 	adapter := &SaramaAdapter{
 		sigUsr1:     sigusr1,
 		sigTerm:     sigterm,
+		brokers:     brokers,
 		keepRunning: DefaultKeepRunning,
 	}
 

@@ -16,4 +16,6 @@ COPY --from=builder /app/bootstrap /app/bootstrap
 # RUN apk --no-cache add ca-certificates tzdata
 
 EXPOSE 3000
+EXPOSE 6060
+
 CMD ["/app/bootstrap"]
