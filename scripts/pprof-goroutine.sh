@@ -1,1 +1,1 @@
-go tool pprof http://localhost:5000/debug/pprof/goroutine
+go tool pprof http://localhost:6060/debug/pprof/goroutine

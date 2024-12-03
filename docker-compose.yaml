@@ -6,6 +6,7 @@ services:
     container_name: idlerpg
     ports:
       - 3000:3000
+      - 6060:6060
     restart: unless-stopped
     environment:
       BROKERS: kafka-1:19092,kafka-2:19092,kafka-3:19092

@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	_ "net/http/pprof"
 
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
 	"github.com/nxdir-s/idlerpg/internal/engine"
@@ -17,6 +20,7 @@ import (
 
 const (
 	DefaultAddr string = "0.0.0.0:3000"
+	PProfAddr   string = "0.0.0.0:6060"
 )
 
 func main() {
@@ -53,7 +57,7 @@ func main() {
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithSaramaConsumer(), secondary.WithSaramaProducer())
+	kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithSaramaProducer())
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
@@ -73,11 +77,22 @@ func main() {
 
 	fmt.Fprint(os.Stdout, "starting server...\n")
 
+	errChan := make(chan error, 1)
+	go func() {
+		fmt.Fprint(os.Stdout, "starting pprof server...\n")
+		errChan <- http.ListenAndServe(PProfAddr, nil)
+	}()
+
 	go server.Start(ctx)
 
 	select {
 	case <-ctx.Done():
 		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 		os.Exit(0)
+	case err := <-errChan:
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "failed to serve pprof: %s\n", err.Error())
+			os.Exit(0)
+		}
 	}
 }

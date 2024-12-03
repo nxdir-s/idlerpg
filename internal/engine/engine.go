@@ -62,7 +62,7 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 				break
 			}
 
-			defer util.Timer("Server Tick")()
+			time := util.Timer("Server Tick")
 
 			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
 
@@ -78,6 +78,7 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 
 			ngin.pool.Broadcast <- event
 			<-event.Consumed
+			time()
 		}
 	}
 }
