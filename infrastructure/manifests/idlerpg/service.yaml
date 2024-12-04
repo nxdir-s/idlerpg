@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: idlerpg-service
+  namespace: idlerpg
+  labels:
+    app: idlerpg-serv
+spec:
+  type: LoadBalancer
+  selector:
+    app: idlerpg
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000

@@ -18,4 +18,4 @@ COPY --from=builder /app/bootstrap /app/bootstrap
 EXPOSE 3000
 EXPOSE 6060
 
-CMD ["/app/bootstrap"]
+ENTRYPOINT ["/app/bootstrap"]
