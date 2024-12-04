@@ -74,15 +74,3 @@ spec:
             - name: KAFKA_LOG_DIRS
               value: "/tmp/kraft-combined-logs"
           resources: {}
-          # volumeMounts:
-          #   - mountPath: /var/lib/kafka/
-          #     name: kafka-data
-  # volumeClaimTemplates:
-  #   - metadata:
-  #       name: kafka-data
-  #     spec:
-  #       accessModes:
-  #         - ReadWriteOnce
-  #       resources:
-  #         requests:
-  #           storage: 1Gi

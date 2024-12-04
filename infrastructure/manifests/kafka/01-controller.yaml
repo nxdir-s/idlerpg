@@ -63,25 +63,3 @@ spec:
             - name: KAFKA_LOG_DIRS
               value: "/tmp/kraft-combined-logs"
           resources: {}
-          # volumeMounts:
-          #   - mountPath: /var/lib/zookeeper/data
-          #     name: zookeeper-data
-          #   - mountPath: /var/lib/zookeeper/log
-          #     name: zookeeper-log
-  # volumeClaimTemplates:
-  #   - metadata:
-  #       name: zookeeper-data
-  #     spec:
-  #       accessModes:
-  #         - ReadWriteOnce
-  #       resources:
-  #         requests:
-  #           storage: 1024Mi
-  #   - metadata:
-  #       name: zookeeper-log
-  #     spec:
-  #       accessModes:
-  #         - ReadWriteOnce
-  #       resources:
-  #         requests:
-  #           storage: 1024Mi
