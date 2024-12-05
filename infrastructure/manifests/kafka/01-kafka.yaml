@@ -44,7 +44,7 @@ spec:
           hostname: kafka-1
           restartPolicy: Always
           ports:
-            - containerPort: 29092
+            - containerPort: 19092
             - containerPort: 9092
           env:
             - name: KAFKA_NODE_ID
