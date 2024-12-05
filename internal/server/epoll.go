@@ -11,6 +11,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const (
+	ClientBuffer int = 100000
+)
+
 type ErrEpoll struct {
 	err error
 }
@@ -37,8 +41,8 @@ func NewEpoll(ctx context.Context, pool *Pool) (*Epoll, error) {
 	return &Epoll{
 		fd:     fd,
 		pool:   pool,
-		Add:    make(chan net.Conn),
-		Remove: make(chan *Client),
+		Add:    make(chan net.Conn, ClientBuffer),
+		Remove: make(chan *Client, ClientBuffer),
 	}, nil
 }
 

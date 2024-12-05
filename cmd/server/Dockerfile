@@ -15,6 +15,8 @@ COPY --from=builder /app/bootstrap /app/bootstrap
 # Set the timezone and install CA certificates
 # RUN apk --no-cache add ca-certificates tzdata
 
+RUN ulimit -n 20000
+
 EXPOSE 3000
 EXPOSE 6060
 

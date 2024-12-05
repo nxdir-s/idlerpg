@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/gobwas/ws"
 	"github.com/nxdir-s/pipelines"
@@ -61,7 +62,11 @@ func (gs *GameServer) Start(ctx context.Context) {
 				continue
 			}
 
-			gs.epoller.Add <- conn
+			select {
+			case gs.epoller.Add <- conn:
+			case <-time.After(80 * time.Millisecond):
+				fmt.Fprint(os.Stdout, "add to epoll timed out...\n")
+			}
 		}
 	}
 }
