@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"fmt"
 	"strconv"
 
 	"example.com/charts/imports/k8s"
@@ -17,13 +18,14 @@ const (
 )
 
 type BrokerProps struct {
-	Image         *string
-	Replicas      *float64
-	Port          *float64
-	ContainerPort *float64
-	InternalPort  *float64
-	NodeID        *float64
-	ClusterID     *string
+	Image          *string
+	Replicas       *float64
+	Port           *float64
+	ContainerPort  *float64
+	InternalPort   *float64
+	NodeID         *float64
+	ClusterID      *string
+	ControllerPort *float64
 }
 
 func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) constructs.Construct {
@@ -42,6 +44,11 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 	containerPort := props.ContainerPort
 	if containerPort == nil {
 		containerPort = jsii.Number(BrokerContainerPort)
+	}
+
+	controllerPort := props.ControllerPort
+	if controllerPort == nil {
+		controllerPort = jsii.Number(ContainerPort)
 	}
 
 	internalPort := props.InternalPort
@@ -95,6 +102,9 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 								{
 									ContainerPort: internalPort,
 								},
+								{
+									ContainerPort: port,
+								},
 							},
 							Env: &[]*k8s.EnvVar{
 								{
@@ -107,11 +117,11 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 								},
 								{
 									Name:  jsii.String("KAFKA_CONTROLLER_QUORUM_VOTERS"),
-									Value: jsii.String("1@controller-1:9093,2@controller-2:9093,3@controller-3:9093"),
+									Value: jsii.String(fmt.Sprintf("1@controller-1:%d,2@controller-2:%d,3@controller-3:%d", controllerPort, controllerPort, controllerPort)),
 								},
 								{
 									Name:  jsii.String("KAFKA_LISTENERS"),
-									Value: jsii.String("PLAINTEXT://:19092,PLAINTEXT_HOST://:9092"),
+									Value: jsii.String(fmt.Sprintf("PLAINTEXT://:%d,PLAINTEXT_HOST://:%d", BrokerInternalPort, BrokerContainerPort)),
 								},
 								{
 									Name:  jsii.String("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"),
@@ -120,6 +130,10 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 								{
 									Name:  jsii.String("KAFKA_INTER_BROKER_LISTENER_NAME"),
 									Value: jsii.String("PLAINTEXT"),
+								},
+								{
+									Name:  jsii.String("KAFKA_ADVERTISED_LISTENERS"),
+									Value: jsii.String(fmt.Sprintf("PLAINTEXT://%s:%d,PLAINTEXT_HOST://localhost:%d", *id, BrokerInternalPort, BrokerPort)),
 								},
 								{
 									Name:  jsii.String("KAFKA_CONTROLLER_LISTENER_NAMES"),
