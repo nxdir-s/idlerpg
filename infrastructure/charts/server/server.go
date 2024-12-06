@@ -39,6 +39,8 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 
 	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 
+	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), nil)
+
 	k8s.NewKubeService(server, id, &k8s.KubeServiceProps{
 		Spec: &k8s.ServiceSpec{
 			Type:     jsii.String("LoadBalancer"),
@@ -82,15 +84,21 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 									ContainerPort: port,
 								},
 							},
-							Env: &[]*k8s.EnvVar{},
+							EnvFrom: &[]*k8s.EnvFromSource{
+								{
+									ConfigMapRef: &k8s.ConfigMapEnvSource{
+										Name: configMap.Name(),
+									},
+								},
+							},
 							Resources: &k8s.ResourceRequirements{
 								Requests: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("1000m")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
 									"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
 								},
 								Limits: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
-									"memory": k8s.Quantity_FromString(jsii.String("3Gi")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("3000m")),
+									"memory": k8s.Quantity_FromString(jsii.String("4Gi")),
 								},
 							},
 						},
@@ -101,4 +109,15 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 	})
 
 	return server
+}
+
+type GSConfigProps struct{}
+
+func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k8s.KubeConfigMap {
+	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
+		Immutable: jsii.Bool(true),
+		Data: &map[string]*string{
+			"BROKERS": jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
+		},
+	})
 }

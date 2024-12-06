@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"fmt"
 	"strconv"
 
 	"example.com/charts/imports/k8s"
@@ -44,14 +45,20 @@ func NewController(scope constructs.Construct, id *string, props *ControllerProp
 
 	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(controller, nil)}
 
-	k8s.NewKubeService(controller, jsii.String("service"), &k8s.KubeServiceProps{
+	configMap := NewControllerCfg(controller, jsii.String(*id+"-cm"), &ControllerCfgProps{
+		ControllerPort: port,
+		NodeID:         props.NodeID,
+		ClusterID:      props.ClusterID,
+	})
+
+	k8s.NewKubeService(controller, id, &k8s.KubeServiceProps{
 		Spec: &k8s.ServiceSpec{
 			Ports:    &[]*k8s.ServicePort{{Port: port, TargetPort: k8s.IntOrString_FromNumber(containerPort)}},
 			Selector: &label,
 		},
 	})
 
-	k8s.NewKubeDeployment(controller, jsii.String("deployment"), &k8s.KubeDeploymentProps{
+	k8s.NewKubeDeployment(controller, id, &k8s.KubeDeploymentProps{
 		Spec: &k8s.DeploymentSpec{
 			Replicas: replicas,
 			Selector: &k8s.LabelSelector{
@@ -73,55 +80,16 @@ func NewController(scope constructs.Construct, id *string, props *ControllerProp
 							Name:            id,
 							Image:           props.Image,
 							ImagePullPolicy: jsii.String("Always"),
-							Ports:           &[]*k8s.ContainerPort{{ContainerPort: containerPort}},
-							Env: &[]*k8s.EnvVar{
+							EnvFrom: &[]*k8s.EnvFromSource{
 								{
-									Name:  jsii.String("KAFKA_NODE_ID"),
-									Value: jsii.String(strconv.Itoa(int(*props.NodeID))),
+									ConfigMapRef: &k8s.ConfigMapEnvSource{
+										Name: configMap.Name(),
+									},
 								},
+							},
+							Ports: &[]*k8s.ContainerPort{
 								{
-									Name:  jsii.String("KAFKA_PROCESS_ROLES"),
-									Value: jsii.String("controller"),
-								},
-								{
-									Name:  jsii.String("KAFKA_CONTROLLER_QUORUM_VOTERS"),
-									Value: jsii.String("1@controller-1:9093,2@controller-2:9093,3@controller-3:9093"),
-								},
-								{
-									Name:  jsii.String("KAFKA_INTER_BROKER_LISTENER_NAME"),
-									Value: jsii.String("PLAINTEXT"),
-								},
-								{
-									Name:  jsii.String("KAFKA_CONTROLLER_LISTENER_NAMES"),
-									Value: jsii.String("CONTROLLER"),
-								},
-								{
-									Name:  jsii.String("KAFKA_LISTENERS"),
-									Value: jsii.String("CONTROLLER://:9093"),
-								},
-								{
-									Name:  jsii.String("CLUSTER_ID"),
-									Value: props.ClusterID,
-								},
-								{
-									Name:  jsii.String("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR"),
-									Value: jsii.String("3"),
-								},
-								{
-									Name:  jsii.String("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS"),
-									Value: jsii.String("0"),
-								},
-								{
-									Name:  jsii.String("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR"),
-									Value: jsii.String("2"),
-								},
-								{
-									Name:  jsii.String("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR"),
-									Value: jsii.String("3"),
-								},
-								{
-									Name:  jsii.String("KAFKA_LOG_DIRS"),
-									Value: jsii.String("/tmp/kraft-combined-logs"),
+									ContainerPort: containerPort,
 								},
 							},
 						},
@@ -132,4 +100,30 @@ func NewController(scope constructs.Construct, id *string, props *ControllerProp
 	})
 
 	return controller
+}
+
+type ControllerCfgProps struct {
+	ControllerPort *float64
+	NodeID         *float64
+	ClusterID      *string
+}
+
+func NewControllerCfg(scope constructs.Construct, id *string, props *ControllerCfgProps) k8s.KubeConfigMap {
+	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
+		Immutable: jsii.Bool(true),
+		Data: &map[string]*string{
+			"KAFKA_NODE_ID":                                  jsii.String(strconv.Itoa(int(*props.NodeID))),
+			"KAFKA_PROCESS_ROLES":                            jsii.String("controller"),
+			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 jsii.String(fmt.Sprintf("1@controller-1:%d,2@controller-2:%d,3@controller-3:%d", props.ControllerPort, props.ControllerPort, props.ControllerPort)),
+			"KAFKA_INTER_BROKER_LISTENER_NAME":               jsii.String("PLAINTEXT"),
+			"KAFKA_CONTROLLER_LISTENER_NAMES":                jsii.String("CONTROLLER"),
+			"KAFKA_LISTENERS":                                jsii.String(fmt.Sprintf("CONTROLLER://:%d", props.ControllerPort)),
+			"CLUSTER_ID":                                     props.ClusterID,
+			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         jsii.String("3"),
+			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         jsii.String("0"),
+			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            jsii.String("2"),
+			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": jsii.String("3"),
+			"KAFKA_LOG_DIRS":                                 jsii.String("/tmp/kraft-combined-logs"),
+		},
+	})
 }
