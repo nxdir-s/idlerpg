@@ -1,8 +1,8 @@
 ---
-version: "2"
 services:
   proxy:
-    image: nginx
+    image: nginx:latest
+    container_name: nginx
     volumes:
       - type: bind
         source: ./nginx.conf
@@ -10,6 +10,7 @@ services:
         read_only: true
     ports:
       - 8080:80
+    restart: unless-stopped
     depends_on:
       - gameserver
 
@@ -211,3 +212,8 @@ services:
       - kafka-1
       - kafka-2
       - kafka-3
+
+networks:
+  default:
+    external: true
+    name: idlerpg
