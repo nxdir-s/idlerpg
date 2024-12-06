@@ -7,12 +7,13 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 )
 
 const (
-	MaxClients int = 10000
+	MaxClients int = 100
 )
 
 func main() {
@@ -26,6 +27,8 @@ func main() {
 
 	var wg sync.WaitGroup
 	for range MaxClients {
+		time.Sleep(80 * time.Millisecond)
+
 		wg.Add(1)
 		go startWS(ctx, &wg, os.Args[1])
 	}
