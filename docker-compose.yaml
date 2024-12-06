@@ -64,11 +64,11 @@ services:
   #     timeout: 5s
   #     retries: 5
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8000:8000
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - 8000:8000
 
   controller-1:
     image: apache/kafka:latest
