@@ -115,8 +115,6 @@ func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Cli
 
 // Simulate simulates player actions
 func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *protobuf.PlayerEvent {
-	fmt.Fprint(os.Stdout, "running simulation...\n")
-
 	return &protobuf.PlayerEvent{
 		Plid:   client.Player.Plid,
 		Action: protobuf.Action(int32(client.Player.Action)),

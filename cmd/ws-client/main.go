@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	MaxClients int = 100
+	MaxClients int = 500
 )
 
 func main() {
