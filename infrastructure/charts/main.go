@@ -8,11 +8,11 @@ import (
 	"github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
 )
 
-type IdleRpgProps struct {
+type RpgChartProps struct {
 	cdk8s.ChartProps
 }
 
-func NewIdleRpg(scope constructs.Construct, id string, props *IdleRpgProps) cdk8s.Chart {
+func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cdk8s.Chart {
 	var cprops cdk8s.ChartProps
 	if props != nil {
 		cprops = props.ChartProps
@@ -33,7 +33,7 @@ func NewIdleRpg(scope constructs.Construct, id string, props *IdleRpgProps) cdk8
 func main() {
 	app := cdk8s.NewApp(nil)
 
-	NewIdleRpg(app, "IdleRpg", nil)
+	NewRpgChart(app, "IdleRpg", nil)
 
 	app.Synth()
 }

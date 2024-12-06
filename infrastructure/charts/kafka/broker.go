@@ -58,6 +58,16 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 
 	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(broker, nil)}
 
+	configMap := NewBrokerCfg(broker, jsii.String(*id+"-cm"), &BrokerCfgProps{
+		BrokerID:       id,
+		Port:           port,
+		ControllerPort: controllerPort,
+		ContainerPort:  containerPort,
+		InternalPort:   internalPort,
+		NodeID:         props.NodeID,
+		ClusterID:      props.ClusterID,
+	})
+
 	k8s.NewKubeService(broker, id, &k8s.KubeServiceProps{
 		Spec: &k8s.ServiceSpec{
 			ClusterIp: jsii.String("None"),
@@ -99,6 +109,13 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 							Name:            id,
 							Image:           props.Image,
 							ImagePullPolicy: jsii.String("Always"),
+							EnvFrom: &[]*k8s.EnvFromSource{
+								{
+									ConfigMapRef: &k8s.ConfigMapEnvSource{
+										Name: configMap.Name(),
+									},
+								},
+							},
 							Ports: &[]*k8s.ContainerPort{
 								{
 									ContainerPort: containerPort,
@@ -110,64 +127,6 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 									ContainerPort: port,
 								},
 							},
-							Env: &[]*k8s.EnvVar{
-								{
-									Name:  jsii.String("KAFKA_NODE_ID"),
-									Value: jsii.String(strconv.Itoa(int(*props.NodeID))),
-								},
-								{
-									Name:  jsii.String("KAFKA_PROCESS_ROLES"),
-									Value: jsii.String("broker"),
-								},
-								{
-									Name:  jsii.String("KAFKA_CONTROLLER_QUORUM_VOTERS"),
-									Value: jsii.String(fmt.Sprintf("1@controller-1:%d,2@controller-2:%d,3@controller-3:%d", controllerPort, controllerPort, controllerPort)),
-								},
-								{
-									Name:  jsii.String("KAFKA_LISTENERS"),
-									Value: jsii.String(fmt.Sprintf("PLAINTEXT://:%d,PLAINTEXT_HOST://:%d", BrokerInternalPort, BrokerContainerPort)),
-								},
-								{
-									Name:  jsii.String("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"),
-									Value: jsii.String("CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"),
-								},
-								{
-									Name:  jsii.String("KAFKA_INTER_BROKER_LISTENER_NAME"),
-									Value: jsii.String("PLAINTEXT"),
-								},
-								{
-									Name:  jsii.String("KAFKA_ADVERTISED_LISTENERS"),
-									Value: jsii.String(fmt.Sprintf("PLAINTEXT://%s:%d,PLAINTEXT_HOST://localhost:%d", *id, BrokerInternalPort, BrokerPort)),
-								},
-								{
-									Name:  jsii.String("KAFKA_CONTROLLER_LISTENER_NAMES"),
-									Value: jsii.String("CONTROLLER"),
-								},
-								{
-									Name:  jsii.String("CLUSTER_ID"),
-									Value: props.ClusterID,
-								},
-								{
-									Name:  jsii.String("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR"),
-									Value: jsii.String("3"),
-								},
-								{
-									Name:  jsii.String("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS"),
-									Value: jsii.String("0"),
-								},
-								{
-									Name:  jsii.String("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR"),
-									Value: jsii.String("2"),
-								},
-								{
-									Name:  jsii.String("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR"),
-									Value: jsii.String("3"),
-								},
-								{
-									Name:  jsii.String("KAFKA_LOG_DIRS"),
-									Value: jsii.String("/tmp/kraft-combined-logs"),
-								},
-							},
 						},
 					},
 				},
@@ -176,4 +135,36 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 	})
 
 	return broker
+}
+
+type BrokerCfgProps struct {
+	BrokerID       *string
+	Port           *float64
+	ControllerPort *float64
+	ContainerPort  *float64
+	InternalPort   *float64
+	NodeID         *float64
+	ClusterID      *string
+}
+
+func NewBrokerCfg(scope constructs.Construct, id *string, props *BrokerCfgProps) k8s.KubeConfigMap {
+	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
+		Immutable: jsii.Bool(true),
+		Data: &map[string]*string{
+			"KAFKA_NODE_ID":                                  jsii.String(strconv.Itoa(int(*props.NodeID))),
+			"KAFKA_PROCESS_ROLES":                            jsii.String("broker"),
+			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 jsii.String(fmt.Sprintf("1@controller-1:%d,2@controller-2:%d,3@controller-3:%d", props.ControllerPort, props.ControllerPort, props.ControllerPort)),
+			"KAFKA_LISTENERS":                                jsii.String(fmt.Sprintf("PLAINTEXT://:%d,PLAINTEXT_HOST://:%d", props.InternalPort, props.ContainerPort)),
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           jsii.String("CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"),
+			"KAFKA_INTER_BROKER_LISTENER_NAME":               jsii.String("PLAINTEXT"),
+			"KAFKA_ADVERTISED_LISTENERS":                     jsii.String(fmt.Sprintf("PLAINTEXT://%s:%d,PLAINTEXT_HOST://localhost:%d", *props.BrokerID, props.InternalPort, props.Port)),
+			"KAFKA_CONTROLLER_LISTENER_NAMES":                jsii.String("CONTROLLER"),
+			"CLUSTER_ID":                                     props.ClusterID,
+			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         jsii.String("3"),
+			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         jsii.String("0"),
+			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            jsii.String("2"),
+			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": jsii.String("3"),
+			"KAFKA_LOG_DIRS":                                 jsii.String("/tmp/kraft-combined-logs"),
+		},
+	})
 }
