@@ -1,0 +1,104 @@
+package server
+
+import (
+	"example.com/charts/imports/k8s"
+	"github.com/aws/constructs-go/constructs/v10"
+	"github.com/aws/jsii-runtime-go"
+	"github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
+)
+
+const (
+	ServerPort     int = 3000
+	ServerReplicas int = 1
+)
+
+type GameServerProps struct {
+	Image         *string
+	Replicas      *float64
+	Port          *float64
+	ContainerPort *float64
+}
+
+func NewGameServer(scope constructs.Construct, id *string, props *GameServerProps) constructs.Construct {
+	server := constructs.NewConstruct(scope, id)
+
+	replicas := props.Replicas
+	if replicas == nil {
+		replicas = jsii.Number(ServerReplicas)
+	}
+
+	port := props.Port
+	if port == nil {
+		port = jsii.Number(ServerPort)
+	}
+
+	containerPort := props.ContainerPort
+	if containerPort == nil {
+		containerPort = jsii.Number(ServerPort)
+	}
+
+	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
+
+	k8s.NewKubeService(server, id, &k8s.KubeServiceProps{
+		Spec: &k8s.ServiceSpec{
+			Type:     jsii.String("LoadBalancer"),
+			Selector: &label,
+			Ports: &[]*k8s.ServicePort{
+				{
+					Protocol:   jsii.String("TCP"),
+					Port:       port,
+					TargetPort: k8s.IntOrString_FromNumber(containerPort),
+				},
+			},
+		},
+	})
+
+	k8s.NewKubeStatefulSet(server, id, &k8s.KubeStatefulSetProps{
+		Spec: &k8s.StatefulSetSpec{
+			Replicas: replicas,
+			Selector: &k8s.LabelSelector{
+				MatchLabels: &label,
+			},
+			Template: &k8s.PodTemplateSpec{
+				Metadata: &k8s.ObjectMeta{
+					Labels: &map[string]*string{
+						"app":                   label["app"],
+						"network/kafka-network": jsii.String("true"),
+					},
+				},
+				Spec: &k8s.PodSpec{
+					SecurityContext: &k8s.PodSecurityContext{
+						FsGroup: jsii.Number(1000),
+					},
+					EnableServiceLinks: jsii.Bool(false),
+					RestartPolicy:      jsii.String("Always"),
+					Containers: &[]*k8s.Container{
+						{
+							Image:           props.Image,
+							ImagePullPolicy: jsii.String("Always"),
+							Name:            id,
+							Ports: &[]*k8s.ContainerPort{
+								{
+									ContainerPort: port,
+								},
+							},
+							Env: &[]*k8s.EnvVar{},
+							Resources: &k8s.ResourceRequirements{
+								Requests: &map[string]k8s.Quantity{
+									"cpu":    k8s.Quantity_FromString(jsii.String("1000m")),
+									"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
+								},
+								Limits: &map[string]k8s.Quantity{
+									"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
+									"memory": k8s.Quantity_FromString(jsii.String("3Gi")),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	return server
+}

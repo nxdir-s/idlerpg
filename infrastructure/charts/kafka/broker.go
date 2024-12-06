@@ -48,17 +48,17 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 
 	controllerPort := props.ControllerPort
 	if controllerPort == nil {
-		controllerPort = jsii.Number(ContainerPort)
+		controllerPort = jsii.Number(ControllerPort)
 	}
 
 	internalPort := props.InternalPort
-	if containerPort == nil {
-		containerPort = jsii.Number(BrokerInternalPort)
+	if internalPort == nil {
+		internalPort = jsii.Number(BrokerInternalPort)
 	}
 
 	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(broker, nil)}
 
-	k8s.NewKubeService(broker, jsii.String("service"), &k8s.KubeServiceProps{
+	k8s.NewKubeService(broker, id, &k8s.KubeServiceProps{
 		Spec: &k8s.ServiceSpec{
 			ClusterIp: jsii.String("None"),
 			Ports: &[]*k8s.ServicePort{
@@ -66,12 +66,16 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 					Port:       port,
 					TargetPort: k8s.IntOrString_FromNumber(containerPort),
 				},
+				{
+					Port:       internalPort,
+					TargetPort: k8s.IntOrString_FromNumber(internalPort),
+				},
 			},
 			Selector: &label,
 		},
 	})
 
-	k8s.NewKubeStatefulSet(broker, jsii.String("deployment"), &k8s.KubeStatefulSetProps{
+	k8s.NewKubeStatefulSet(broker, id, &k8s.KubeStatefulSetProps{
 		Spec: &k8s.StatefulSetSpec{
 			Replicas: replicas,
 			Selector: &k8s.LabelSelector{
