@@ -59,6 +59,9 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 	})
 
 	deployment := k8s.NewKubeStatefulSet(server, id, &k8s.KubeStatefulSetProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Spec: &k8s.StatefulSetSpec{
 			ServiceName: service.Name(),
 			Replicas:    replicas,

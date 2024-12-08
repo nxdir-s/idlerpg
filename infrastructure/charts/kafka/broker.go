@@ -91,6 +91,9 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 	})
 
 	deployment := k8s.NewKubeStatefulSet(broker, id, &k8s.KubeStatefulSetProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Spec: &k8s.StatefulSetSpec{
 			ServiceName: service.Name(),
 			Replicas:    replicas,

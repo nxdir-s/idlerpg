@@ -62,6 +62,9 @@ func NewController(scope constructs.Construct, id *string, props *ControllerProp
 	})
 
 	deployment := k8s.NewKubeDeployment(controller, id, &k8s.KubeDeploymentProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Spec: &k8s.DeploymentSpec{
 			Replicas: replicas,
 			Selector: &k8s.LabelSelector{
