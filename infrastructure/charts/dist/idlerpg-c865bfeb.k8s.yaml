@@ -31,7 +31,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: idlerpg-kafka-controller-1-c8f45cb6
+  name: controller-1
 spec:
   replicas: 1
   selector:
@@ -90,7 +90,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: idlerpg-kafka-controller-2-c8689549
+  name: controller-2
 spec:
   replicas: 1
   selector:
@@ -149,7 +149,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: idlerpg-kafka-controller-3-c8233ccc
+  name: controller-3
 spec:
   replicas: 1
   selector:
@@ -215,7 +215,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: idlerpg-kafka-kafka-1-c85bc42a
+  name: kafka-1
 spec:
   replicas: 1
   selector:
@@ -284,7 +284,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: idlerpg-kafka-kafka-2-c8a84fad
+  name: kafka-2
 spec:
   replicas: 1
   selector:
@@ -353,7 +353,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: idlerpg-kafka-kafka-3-c806d0c2
+  name: kafka-3
 spec:
   replicas: 1
   selector:
@@ -406,7 +406,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: idlerpg-gameserver-c8c0b5dc
+  name: gameserver
 spec:
   replicas: 1
   selector:
