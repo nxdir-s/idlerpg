@@ -41,7 +41,10 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 
 	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), nil)
 
-	k8s.NewKubeService(server, id, &k8s.KubeServiceProps{
+	service := k8s.NewKubeService(server, jsii.String(*id+"-srv"), &k8s.KubeServiceProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Spec: &k8s.ServiceSpec{
 			Type:     jsii.String("LoadBalancer"),
 			Selector: &label,
@@ -55,9 +58,10 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 		},
 	})
 
-	k8s.NewKubeStatefulSet(server, id, &k8s.KubeStatefulSetProps{
+	deployment := k8s.NewKubeStatefulSet(server, id, &k8s.KubeStatefulSetProps{
 		Spec: &k8s.StatefulSetSpec{
-			Replicas: replicas,
+			ServiceName: service.Name(),
+			Replicas:    replicas,
 			Selector: &k8s.LabelSelector{
 				MatchLabels: &label,
 			},
@@ -77,7 +81,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 					Containers: &[]*k8s.Container{
 						{
 							Image:           props.Image,
-							ImagePullPolicy: jsii.String("Always"),
+							ImagePullPolicy: jsii.String("Never"),
 							Name:            id,
 							Ports: &[]*k8s.ContainerPort{
 								{
@@ -107,6 +111,8 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 			},
 		},
 	})
+
+	deployment.AddDependency(service)
 
 	return server
 }

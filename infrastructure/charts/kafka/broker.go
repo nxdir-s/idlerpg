@@ -60,23 +60,28 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 
 	configMap := NewBrokerCfg(broker, jsii.String(*id+"-cm"), &BrokerCfgProps{
 		BrokerID:       id,
-		Port:           port,
-		ControllerPort: controllerPort,
-		ContainerPort:  containerPort,
-		InternalPort:   internalPort,
-		NodeID:         props.NodeID,
+		Port:           jsii.String(strconv.Itoa(int(*port))),
+		ControllerPort: jsii.String(strconv.Itoa(int(*controllerPort))),
+		ContainerPort:  jsii.String(strconv.Itoa(int(*containerPort))),
+		InternalPort:   jsii.String(strconv.Itoa(int(*internalPort))),
+		NodeID:         jsii.String(strconv.Itoa(int(*props.NodeID))),
 		ClusterID:      props.ClusterID,
 	})
 
-	k8s.NewKubeService(broker, id, &k8s.KubeServiceProps{
+	service := k8s.NewKubeService(broker, jsii.String(*id+"-srv"), &k8s.KubeServiceProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Spec: &k8s.ServiceSpec{
 			ClusterIp: jsii.String("None"),
 			Ports: &[]*k8s.ServicePort{
 				{
+					Name:       jsii.String("external"),
 					Port:       port,
 					TargetPort: k8s.IntOrString_FromNumber(containerPort),
 				},
 				{
+					Name:       jsii.String("internal"),
 					Port:       internalPort,
 					TargetPort: k8s.IntOrString_FromNumber(internalPort),
 				},
@@ -85,9 +90,10 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 		},
 	})
 
-	k8s.NewKubeStatefulSet(broker, id, &k8s.KubeStatefulSetProps{
+	deployment := k8s.NewKubeStatefulSet(broker, id, &k8s.KubeStatefulSetProps{
 		Spec: &k8s.StatefulSetSpec{
-			Replicas: replicas,
+			ServiceName: service.Name(),
+			Replicas:    replicas,
 			Selector: &k8s.LabelSelector{
 				MatchLabels: &label,
 			},
@@ -134,16 +140,18 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 		},
 	})
 
+	deployment.AddDependency(service)
+
 	return broker
 }
 
 type BrokerCfgProps struct {
 	BrokerID       *string
-	Port           *float64
-	ControllerPort *float64
-	ContainerPort  *float64
-	InternalPort   *float64
-	NodeID         *float64
+	Port           *string
+	ControllerPort *string
+	ContainerPort  *string
+	InternalPort   *string
+	NodeID         *string
 	ClusterID      *string
 }
 
@@ -151,13 +159,13 @@ func NewBrokerCfg(scope constructs.Construct, id *string, props *BrokerCfgProps)
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
-			"KAFKA_NODE_ID":                                  jsii.String(strconv.Itoa(int(*props.NodeID))),
+			"KAFKA_NODE_ID":                                  props.NodeID,
 			"KAFKA_PROCESS_ROLES":                            jsii.String("broker"),
-			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 jsii.String(fmt.Sprintf("1@controller-1:%d,2@controller-2:%d,3@controller-3:%d", props.ControllerPort, props.ControllerPort, props.ControllerPort)),
-			"KAFKA_LISTENERS":                                jsii.String(fmt.Sprintf("PLAINTEXT://:%d,PLAINTEXT_HOST://:%d", props.InternalPort, props.ContainerPort)),
+			"KAFKA_CONTROLLER_QUORUM_VOTERS":                 jsii.String(fmt.Sprintf("1@controller-1:%s,2@controller-2:%s,3@controller-3:%s", *props.ControllerPort, *props.ControllerPort, *props.ControllerPort)),
+			"KAFKA_LISTENERS":                                jsii.String(fmt.Sprintf("PLAINTEXT://:%s,PLAINTEXT_HOST://:%s", *props.InternalPort, *props.ContainerPort)),
 			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           jsii.String("CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"),
 			"KAFKA_INTER_BROKER_LISTENER_NAME":               jsii.String("PLAINTEXT"),
-			"KAFKA_ADVERTISED_LISTENERS":                     jsii.String(fmt.Sprintf("PLAINTEXT://%s:%d,PLAINTEXT_HOST://localhost:%d", *props.BrokerID, props.InternalPort, props.Port)),
+			"KAFKA_ADVERTISED_LISTENERS":                     jsii.String(fmt.Sprintf("PLAINTEXT://%s:%s,PLAINTEXT_HOST://localhost:%s", *props.BrokerID, *props.InternalPort, *props.Port)),
 			"KAFKA_CONTROLLER_LISTENER_NAMES":                jsii.String("CONTROLLER"),
 			"CLUSTER_ID":                                     props.ClusterID,
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         jsii.String("3"),
