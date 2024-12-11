@@ -22,9 +22,7 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 	kafka.NewCluster(chart, jsii.String("kafka"), nil)
 
 	server.NewGameServer(chart, jsii.String("gameserver"), &server.GameServerProps{
-		Image:         jsii.String("idlerpg:latest"),
-		Port:          jsii.Number(3000),
-		ContainerPort: jsii.Number(3000),
+		Image: jsii.String("idlerpg:latest"),
 	})
 
 	return chart
@@ -33,7 +31,7 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 func main() {
 	app := cdk8s.NewApp(nil)
 
-	NewRpgChart(app, "IdleRpg", nil)
+	NewRpgChart(app, "idlerpg", nil)
 
 	app.Synth()
 }

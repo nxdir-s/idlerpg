@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-kafka-controller-1-controller-1-cm-c8b7732c
+  name: controller-1-cm
 data:
   CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
   KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
@@ -26,7 +26,7 @@ spec:
     - port: 9093
       targetPort: 9093
   selector:
-    app: IdleRpg-kafka-controller-1-c8599e42
+    app: controller-1
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -36,17 +36,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-kafka-controller-1-c8599e42
+      app: controller-1
   template:
     metadata:
       labels:
-        app: IdleRpg-kafka-controller-1-c8599e42
+        app: controller-1
         network/kafka-network: "true"
+      name: controller-1
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-kafka-controller-1-controller-1-cm-c8b7732c
+                name: controller-1-cm
           image: apache/kafka:latest
           imagePullPolicy: Always
           name: controller-1
@@ -60,7 +61,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-kafka-controller-2-controller-2-cm-c89667df
+  name: controller-2-cm
 data:
   CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
   KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
@@ -85,7 +86,7 @@ spec:
     - port: 9093
       targetPort: 9093
   selector:
-    app: IdleRpg-kafka-controller-2-c8061e65
+    app: controller-2
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -95,17 +96,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-kafka-controller-2-c8061e65
+      app: controller-2
   template:
     metadata:
       labels:
-        app: IdleRpg-kafka-controller-2-c8061e65
+        app: controller-2
         network/kafka-network: "true"
+      name: controller-2
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-kafka-controller-2-controller-2-cm-c89667df
+                name: controller-2-cm
           image: apache/kafka:latest
           imagePullPolicy: Always
           name: controller-2
@@ -119,7 +121,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-kafka-controller-3-controller-3-cm-c861da16
+  name: controller-3-cm
 data:
   CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
   KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
@@ -144,7 +146,7 @@ spec:
     - port: 9093
       targetPort: 9093
   selector:
-    app: IdleRpg-kafka-controller-3-c853de18
+    app: controller-3
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -154,17 +156,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-kafka-controller-3-c853de18
+      app: controller-3
   template:
     metadata:
       labels:
-        app: IdleRpg-kafka-controller-3-c853de18
+        app: controller-3
         network/kafka-network: "true"
+      name: controller-3
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-kafka-controller-3-controller-3-cm-c861da16
+                name: controller-3-cm
           image: apache/kafka:latest
           imagePullPolicy: Always
           name: controller-3
@@ -178,7 +181,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-kafka-kafka-1-kafka-1-cm-c8065135
+  name: kafka-1-cm
 data:
   CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
   KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-1:19092,PLAINTEXT_HOST://localhost:29092"
@@ -210,7 +213,7 @@ spec:
       port: 19092
       targetPort: 19092
   selector:
-    app: IdleRpg-kafka-kafka-1-c888c744
+    app: kafka-1
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -220,18 +223,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-kafka-kafka-1-c888c744
+      app: kafka-1
   serviceName: kafka-1
   template:
     metadata:
       labels:
-        app: IdleRpg-kafka-kafka-1-c888c744
+        app: kafka-1
         network/kafka-network: "true"
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-kafka-kafka-1-kafka-1-cm-c8065135
+                name: kafka-1-cm
           image: apache/kafka:latest
           imagePullPolicy: Always
           name: kafka-1
@@ -247,7 +250,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-kafka-kafka-2-kafka-2-cm-c861400a
+  name: kafka-2-cm
 data:
   CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
   KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-2:19092,PLAINTEXT_HOST://localhost:39092"
@@ -279,7 +282,7 @@ spec:
       port: 19092
       targetPort: 19092
   selector:
-    app: IdleRpg-kafka-kafka-2-c8dbed46
+    app: kafka-2
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -289,18 +292,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-kafka-kafka-2-c8dbed46
+      app: kafka-2
   serviceName: kafka-2
   template:
     metadata:
       labels:
-        app: IdleRpg-kafka-kafka-2-c8dbed46
+        app: kafka-2
         network/kafka-network: "true"
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-kafka-kafka-2-kafka-2-cm-c861400a
+                name: kafka-2-cm
           image: apache/kafka:latest
           imagePullPolicy: Always
           name: kafka-2
@@ -316,7 +319,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-kafka-kafka-3-kafka-3-cm-c8212c32
+  name: kafka-3-cm
 data:
   CLUSTER_ID: "4L6g3nShT-eMCtK--X86sw"
   KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-3:19092,PLAINTEXT_HOST://localhost:49092"
@@ -348,7 +351,7 @@ spec:
       port: 19092
       targetPort: 19092
   selector:
-    app: IdleRpg-kafka-kafka-3-c88d6cbc
+    app: kafka-3
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -358,18 +361,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-kafka-kafka-3-c88d6cbc
+      app: kafka-3
   serviceName: kafka-3
   template:
     metadata:
       labels:
-        app: IdleRpg-kafka-kafka-3-c88d6cbc
+        app: kafka-3
         network/kafka-network: "true"
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-kafka-kafka-3-kafka-3-cm-c8212c32
+                name: kafka-3-cm
           image: apache/kafka:latest
           imagePullPolicy: Always
           name: kafka-3
@@ -385,7 +388,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: idlerpg-gameserver-gameserver-cm-c8968dbc
+  name: gameserver-cm
 data:
   BROKERS: "kafka-1:19092,kafka-2:19092,kafka-3:19092"
 immutable: true
@@ -400,7 +403,7 @@ spec:
       protocol: TCP
       targetPort: 3000
   selector:
-    app: IdleRpg-gameserver-c83de386
+    app: gameserver
   type: LoadBalancer
 ---
 apiVersion: apps/v1
@@ -411,18 +414,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: IdleRpg-gameserver-c83de386
+      app: gameserver
   serviceName: gameserver
   template:
     metadata:
       labels:
-        app: IdleRpg-gameserver-c83de386
+        app: gameserver
         network/kafka-network: "true"
     spec:
       containers:
         - envFrom:
             - configMapRef:
-                name: idlerpg-gameserver-gameserver-cm-c8968dbc
+                name: gameserver-cm
           image: idlerpg:latest
           imagePullPolicy: Never
           name: gameserver

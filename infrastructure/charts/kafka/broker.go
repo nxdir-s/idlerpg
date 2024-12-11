@@ -7,7 +7,6 @@ import (
 	"example.com/charts/imports/k8s"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-	"github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
 )
 
 const (
@@ -56,7 +55,8 @@ func NewBroker(scope constructs.Construct, id *string, props *BrokerProps) const
 		internalPort = jsii.Number(BrokerInternalPort)
 	}
 
-	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(broker, nil)}
+	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(broker, nil)}
+	label := map[string]*string{"app": id}
 
 	configMap := NewBrokerCfg(broker, jsii.String(*id+"-cm"), &BrokerCfgProps{
 		BrokerID:       id,
@@ -160,6 +160,9 @@ type BrokerCfgProps struct {
 
 func NewBrokerCfg(scope constructs.Construct, id *string, props *BrokerCfgProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
 			"KAFKA_NODE_ID":                                  props.NodeID,

@@ -1,4 +1,4 @@
 language: go
-app: "go run .; ./clean.sh"
+app: "go run ."
 imports:
   - k8s

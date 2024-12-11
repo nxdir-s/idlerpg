@@ -4,7 +4,6 @@ import (
 	"example.com/charts/imports/k8s"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-	"github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
 )
 
 const (
@@ -37,7 +36,8 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 		containerPort = jsii.Number(ServerPort)
 	}
 
-	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
+	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
+	label := map[string]*string{"app": id}
 
 	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), nil)
 
@@ -124,6 +124,9 @@ type GSConfigProps struct{}
 
 func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
 			"BROKERS": jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
