@@ -7,7 +7,6 @@ import (
 	"example.com/charts/imports/k8s"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-	"github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
 )
 
 const (
@@ -43,7 +42,8 @@ func NewController(scope constructs.Construct, id *string, props *ControllerProp
 		containerPort = jsii.Number(ContainerPort)
 	}
 
-	label := map[string]*string{"app": cdk8s.Names_ToLabelValue(controller, nil)}
+	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(controller, nil)}
+	label := map[string]*string{"app": id}
 
 	configMap := NewControllerCfg(controller, jsii.String(*id+"-cm"), &ControllerCfgProps{
 		ControllerPort: jsii.String(strconv.Itoa(int(*port))),
@@ -71,10 +71,13 @@ func NewController(scope constructs.Construct, id *string, props *ControllerProp
 				MatchLabels: &label,
 			},
 			Template: &k8s.PodTemplateSpec{
-				Metadata: &k8s.ObjectMeta{Labels: &map[string]*string{
-					"app":                   label["app"],
-					"network/kafka-network": jsii.String("true"),
-				}},
+				Metadata: &k8s.ObjectMeta{
+					Name: id,
+					Labels: &map[string]*string{
+						"app":                   label["app"],
+						"network/kafka-network": jsii.String("true"),
+					},
+				},
 				Spec: &k8s.PodSpec{
 					SecurityContext: &k8s.PodSecurityContext{
 						FsGroup: jsii.Number(1000),
@@ -118,6 +121,9 @@ type ControllerCfgProps struct {
 
 func NewControllerCfg(scope constructs.Construct, id *string, props *ControllerCfgProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
+		Metadata: &k8s.ObjectMeta{
+			Name: id,
+		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
 			"KAFKA_NODE_ID":                                  props.NodeID,
