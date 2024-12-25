@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/nxdir-s/idlerpg/web/server"
+	"github.com/nxdir-s/idlerpg/web"
 )
 
 const (
@@ -29,7 +29,7 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "listening on %v\n", listener.Addr())
 
-	ws, err := server.NewWebServer(ctx)
+	ws, err := web.NewServer(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create web server: %s\n", err.Error())
 		os.Exit(1)

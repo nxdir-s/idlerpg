@@ -1,4 +1,4 @@
-package server
+package web
 
 import (
 	"context"
@@ -37,19 +37,19 @@ func (e *FSError) Error() string {
 	return "error creating file system rooted at " + e.dir + ": " + e.err.Error()
 }
 
-type WebServer struct {
+type Server struct {
 	mux  http.ServeMux
 	html *template.Template
 }
 
-// NewWebServer creates a new WebServer
-func NewWebServer(ctx context.Context) (*WebServer, error) {
+// NewServer creates a new WebServer
+func NewServer(ctx context.Context) (*Server, error) {
 	staticFS, err := fs.Sub(contentFS, "static")
 	if err != nil {
 		return nil, &FSError{"static", err}
 	}
 
-	s := &WebServer{}
+	s := &Server{}
 
 	if err := s.parseTemplates(templateFS, TemplateExt, nil); err != nil {
 		return nil, err
@@ -62,18 +62,18 @@ func NewWebServer(ctx context.Context) (*WebServer, error) {
 }
 
 // ServeHTTP calls the underlying mux.ServeHTTP method
-func (s *WebServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func (s *WebServer) handleIndex(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
 	return s.html.ExecuteTemplate(w, IndexTmpl, nil)
 }
 
-func (s *WebServer) parseTemplates(templates fs.FS, ext string, funcMap template.FuncMap) error {
+func (s *Server) parseTemplates(templates fs.FS, ext string, funcMap template.FuncMap) error {
 	root := template.New(RootTmpl)
 	walkDir := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
