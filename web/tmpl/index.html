@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
@@ -10,28 +10,34 @@
     <!--     Fonts and icons     -->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
     <!-- Font Awesome Icons -->
-    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    <!-- <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script> -->
     <!-- Nucleo Icons -->
     <link href="/static/css/nucleo-icons.css" rel="stylesheet" />
     <link href="/static/css/nucleo-svg.css" rel="stylesheet" />
-    <!-- Popper -->
-    <script src="https://unpkg.com/@popperjs/core@2"></script>
     <!-- Main Styling -->
     <link href="/static/css/soft-ui-dashboard-tailwind.css?v=1.0.5" rel="stylesheet" />
-    <script src="/static/htmx/htmx.min.js"></script>
+    <!-- <script src="/static/htmx/htmx.min.js"></script> -->
+    <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.js"
+        integrity="sha384-oeUn82QNXPuVkGCkcrInrS1twIxKhkZiFfr2TdiuObZ3n3yIeMiqcRzkIcguaof1"
+        crossorigin="anonymous"></script>
     <script src="/static/htmx/ext/ws.js"></script>
     <script defer src="/static/alpine.min.js"></script>
 </head>
 
-<body id="body" class="m-0 font-sans text-base antialiased font-normal leading-default bg-gray-50 text-slate-500">
+<body class="m-0 font-sans text-base antialiased font-normal leading-default bg-gray-50 text-slate-500">
     {{ template "sidenav" . }}
-    {{ template "main" . }}
+
+    <main class="ease-soft-in-out xl:ml-68.5 relative h-full max-h-screen rounded-xl transition-all duration-200">
+        {{ template "dashboard" . }}
+    </main>
+
+    <!-- {{ template "footer" . }} -->
 </body>
 <!-- plugin for charts  -->
-<script src="./static/js/plugins/chartjs.min.js" async></script>
+<!-- <script src="/static/js/plugins/chartjs.min.js" async></script> -->
 <!-- plugin for scrollbar  -->
-<script src="./static/js/plugins/perfect-scrollbar.min.js" async></script>
+<!-- <script src="/static/js/plugins/perfect-scrollbar.min.js" async></script> -->
 <!-- main script file  -->
-<script src="./static/js/soft-ui-dashboard-tailwind.js?v=1.0.5" async></script>
+<!-- <script src="/static/js/soft-ui-dashboard-tailwind.js?v=1.0.5" async></script> -->
 
 </html>
