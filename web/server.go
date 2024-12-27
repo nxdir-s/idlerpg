@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -58,12 +59,12 @@ func NewServer(ctx context.Context) (*Server, error) {
 	s.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
 	s.mux.HandleFunc("/", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/dashboard", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/tables", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/billing", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/profile", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/login", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/registration", httpHandler(s.handleIndex))
+	s.mux.HandleFunc("/dashboard", httpHandler(s.handleDashboard))
+	s.mux.HandleFunc("/tables", httpHandler(s.handleTables))
+	s.mux.HandleFunc("/billing", httpHandler(s.handleBilling))
+	s.mux.HandleFunc("/profile", httpHandler(s.handleProfile))
+	s.mux.HandleFunc("/login", httpHandler(s.handleLogin))
+	s.mux.HandleFunc("/registration", httpHandler(s.handleRegistration))
 
 	return s, nil
 }
@@ -77,12 +78,16 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
+	fmt.Fprint(os.Stdout, "/index recieved request\n")
+
 	return s.html.ExecuteTemplate(w, IndexTmpl, nil)
 }
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
+
+	fmt.Fprint(os.Stdout, "/dashboard recieved request\n")
 
 	return s.html.ExecuteTemplate(w, "dashboard", nil)
 }
@@ -91,12 +96,16 @@ func (s *Server) handleTables(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
+	fmt.Fprint(os.Stdout, "/tables recieved request\n")
+
 	return s.html.ExecuteTemplate(w, "tables", nil)
 }
 
 func (s *Server) handleBilling(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
+
+	fmt.Fprint(os.Stdout, "/billing recieved request\n")
 
 	return s.html.ExecuteTemplate(w, "billing", nil)
 }
@@ -105,6 +114,8 @@ func (s *Server) handleProfile(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
+	fmt.Fprint(os.Stdout, "/profile recieved request\n")
+
 	return s.html.ExecuteTemplate(w, "profile", nil)
 }
 
@@ -112,12 +123,16 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
+	fmt.Fprint(os.Stdout, "/login recieved request\n")
+
 	return s.html.ExecuteTemplate(w, "login", nil)
 }
 
 func (s *Server) handleRegistration(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
+
+	fmt.Fprint(os.Stdout, "/registration recieved request\n")
 
 	return s.html.ExecuteTemplate(w, "registration", nil)
 }
