@@ -7,7 +7,6 @@ require (
 	github.com/aws/aws-cdk-go/awscdk/v2 v2.170.0
 	github.com/aws/constructs-go/constructs/v10 v10.4.2
 	github.com/aws/jsii-runtime-go v1.105.0
-	github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2 v2.69.23
 	github.com/coder/websocket v1.8.12
 	github.com/gobwas/ws v1.4.0
 	github.com/jackc/pgx/v5 v5.7.1
@@ -16,11 +15,13 @@ require (
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/trace v1.30.0
 	golang.org/x/net v0.33.0
+	golang.org/x/oauth2 v0.22.0
 	golang.org/x/sys v0.28.0
 	google.golang.org/protobuf v1.35.1
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/cdklabs/awscdk-asset-awscli-go/awscliv1/v2 v2.2.208 // indirect
 	github.com/cdklabs/awscdk-asset-kubectl-go/kubectlv20/v2 v2.1.3 // indirect

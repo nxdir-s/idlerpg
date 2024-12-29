@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DefaultAddr string = "0.0.0.0:4000"
+	DefaultAddr string = "0.0.0.0:8080"
 )
 
 func main() {
