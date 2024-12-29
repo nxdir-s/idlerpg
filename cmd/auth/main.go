@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/nxdir-s/idlerpg/web"
+	"github.com/nxdir-s/idlerpg/internal/auth"
 )
 
 const (
@@ -29,14 +29,14 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "listening on %v\n", listener.Addr())
 
-	ws, err := web.NewServer(ctx)
+	s, err := auth.NewServer(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create web server: %s\n", err.Error())
 		os.Exit(1)
 	}
 
 	server := &http.Server{
-		Handler:      ws,
+		Handler:      s,
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
 		BaseContext: func(l net.Listener) context.Context {
