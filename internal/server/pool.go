@@ -19,16 +19,18 @@ type EpollEvent struct {
 	Resp   chan []*Client
 }
 
+type Connections map[int32]*Client
+
 type Snapshot struct {
-	Connections map[int]*Client
+	Connections Connections
 	Processed   chan bool
 }
 
 type Pool struct {
-	Connections map[int]*Client
+	Connections Connections
 
 	Register    chan *Client
-	Remove      chan int
+	Remove      chan int32
 	Broadcast   chan *valobj.Event
 	Snapshot    chan chan *Snapshot
 	EpollEvents chan *EpollEvent
@@ -38,9 +40,9 @@ type Pool struct {
 
 func NewPool(ctx context.Context) *Pool {
 	return &Pool{
-		Connections: make(map[int]*Client),
+		Connections: make(map[int32]*Client),
 		Register:    make(chan *Client),
-		Remove:      make(chan int),
+		Remove:      make(chan int32),
 		Broadcast:   make(chan *valobj.Event),
 		Snapshot:    make(chan chan *Snapshot),
 		EpollEvents: make(chan *EpollEvent),

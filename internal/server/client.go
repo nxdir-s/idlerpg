@@ -16,7 +16,7 @@ import (
 
 type Client struct {
 	Conn   net.Conn
-	Fd     int
+	Fd     int32
 	Player *entity.Player
 }
 

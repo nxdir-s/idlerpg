@@ -108,7 +108,7 @@ func (e *Epoll) add(conn net.Conn) error {
 
 	e.pool.Register <- &Client{
 		Conn:   conn,
-		Fd:     fd,
+		Fd:     int32(fd),
 		Player: entity.NewPlayer(),
 	}
 
@@ -136,8 +136,7 @@ func (e *Epoll) getFileDescriptor(conn net.Conn) (int, error) {
 		return 0, err
 	}
 
-	sfd := 0
-
+	var sfd int
 	err = rawConn.Control(func(fd uintptr) {
 		sfd = int(fd)
 	})
