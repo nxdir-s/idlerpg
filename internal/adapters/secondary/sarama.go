@@ -218,8 +218,8 @@ func NewSaramaAdapter(ctx context.Context, brokers []string, opts ...SaramaAdapt
 	return adapter, nil
 }
 
-// SendPlayerEvent marshals and sends player events to kafka
-func (a *SaramaAdapter) SendPlayerEvent(ctx context.Context, event *protobuf.PlayerEvent) error {
+// SendUserEvent marshals and sends player events to kafka
+func (a *SaramaAdapter) SendUserEvent(ctx context.Context, event *protobuf.UserEvent) error {
 	if a.producer == nil {
 		return &ErrNilProducer{}
 	}

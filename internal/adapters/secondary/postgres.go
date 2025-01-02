@@ -2,6 +2,7 @@ package secondary
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -9,6 +10,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nxdir-s/idlerpg/internal/ports"
+	"github.com/nxdir-s/idlerpg/internal/telemetry/spans"
+	"github.com/nxdir-s/idlerpg/internal/util"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ErrConnect struct {
@@ -17,6 +21,36 @@ type ErrConnect struct {
 
 func (e *ErrConnect) Error() string {
 	return "error creating connection pool: " + e.err.Error()
+}
+
+type ErrQueryRow struct {
+	err error
+}
+
+func (e *ErrQueryRow) Error() string {
+	return "error querying row: " + e.err.Error()
+}
+
+type ErrExecQuery struct {
+	err error
+}
+
+func (e *ErrExecQuery) Error() string {
+	return "error executing query: " + e.err.Error()
+}
+
+type ErrNotFound struct {
+	name string
+}
+
+func (e *ErrNotFound) Error() string {
+	return "error no rows affected, " + e.name + " not found"
+}
+
+type ErrCreateUser struct{}
+
+func (e *ErrCreateUser) Error() string {
+	return "failed to create new user"
 }
 
 type PgxPool interface {
@@ -101,3 +135,186 @@ func (a *PostgresAdapter) Commit(ctx context.Context) error {
 func (a *PostgresAdapter) Rollback(ctx context.Context) error {
 	return a.tx.Rollback(ctx)
 }
+
+// CreateUser creates a new user and returns the user's id
+func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, error) {
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	ctx, span := tracer.Start(ctx, spans.CreateUser,
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"email": email,
+	}
+
+	var userId int
+	err = a.conn.QueryRow(ctx, CreateUserQuery, args).Scan(&userId)
+	if err != nil {
+		err = &ErrExecQuery{err}
+		util.RecordError(span, spans.CreateUser+" failed", err)
+
+		return 0, err
+	}
+
+	return userId, nil
+}
+
+const CreateUserQuery string = `
+    INSERT INTO users (
+        email
+    ) VALUES (
+        @email
+    ) RETURNING id
+`
+
+// RemoveUser deletes a user using the supplied id
+func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctx, span := tracer.Start(ctx, spans.RemoveUser,
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"id": id,
+	}
+
+	resp, err := a.conn.Exec(ctx, RemoveUserQuery, args)
+	if err != nil {
+		err = &ErrExecQuery{err}
+		util.RecordError(span, spans.RemoveUser+" failed", err)
+
+		return err
+	}
+
+	if resp.RowsAffected() == 0 {
+		return &ErrNotFound{"user"}
+	}
+
+	return nil
+}
+
+const RemoveUserQuery string = `
+    DELETE FROM users
+    WHERE id = @id
+`
+
+func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, error) {
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	ctx, span := tracer.Start(ctx, spans.GetUserId,
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"email": email,
+	}
+
+	var userId int
+	err = a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		err = &ErrQueryRow{err}
+		util.RecordError(span, spans.GetUserId+" failed", err)
+
+		return 0, err
+	}
+
+	if userId == 0 || errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
+
+	return userId, nil
+}
+
+const UserIdQuery string = `
+    SELECT id
+    FROM users
+    WHERE email = @email
+`
+
+func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, error) {
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	ctx, span := tracer.Start(ctx, spans.EmailExists,
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"email": email,
+	}
+
+	var userEmail string
+	err = a.conn.QueryRow(ctx, EmailExistsQuery, args).Scan(&userEmail)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		err = &ErrQueryRow{err}
+		util.RecordError(span, spans.EmailExists+" failed", err)
+
+		return false, err
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+const EmailExistsQuery string = `
+    SELECT email
+    FROM users
+    WHERE email = @email
+`
+
+func (a *PostgresAdapter) UpdateRefreshToken(ctx context.Context, id int, token string) error {
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctx, span := tracer.Start(ctx, spans.UpdateRefreshToken,
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"id":    id,
+		"token": token,
+	}
+
+	resp, err := a.conn.Exec(ctx, UpdateRefreshTokenQuery, args)
+	if err != nil {
+		err = &ErrExecQuery{err}
+		util.RecordError(span, spans.UpdateRefreshToken+" failed", err)
+
+		return err
+	}
+
+	if resp.RowsAffected() == 0 {
+		return &ErrNotFound{"user"}
+	}
+
+	return nil
+}
+
+const UpdateRefreshTokenQuery string = `
+    UPDATE users
+    SET refresh_token = @token
+    WHERE id = @id
+`

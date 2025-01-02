@@ -1,4 +1,4 @@
-package players
+package users
 
 type Action uint8
 

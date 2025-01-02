@@ -15,9 +15,9 @@ import (
 )
 
 type Client struct {
-	Conn   net.Conn
-	Fd     int32
-	Player *entity.Player
+	Conn net.Conn
+	Fd   int32
+	User *entity.User
 }
 
 func (c *Client) SendMessage(ctx context.Context, msg *valobj.Message) error {
@@ -44,7 +44,7 @@ func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) error {
 			header, err := ws.ReadHeader(c.Conn)
 			if err != nil {
 				if err == io.EOF {
-					fmt.Fprintf(os.Stdout, "%d disconnected...\n", c.Player.Plid)
+					fmt.Fprintf(os.Stdout, "%d disconnected...\n", c.User.Id)
 					epoller.Remove <- c
 
 					return nil
@@ -59,7 +59,7 @@ func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) error {
 				return err
 			}
 
-			// TODO: update player state
+			// TODO: update user state
 
 			if header.OpCode == ws.OpClose {
 				return nil

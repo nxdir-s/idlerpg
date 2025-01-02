@@ -107,9 +107,9 @@ func (e *Epoll) add(conn net.Conn) error {
 	}
 
 	e.pool.Register <- &Client{
-		Conn:   conn,
-		Fd:     int32(fd),
-		Player: entity.NewPlayer(),
+		Conn: conn,
+		Fd:   int32(fd),
+		User: entity.NewUser(),
 	}
 
 	return nil

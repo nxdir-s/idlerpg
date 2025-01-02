@@ -58,7 +58,7 @@ func (p *Pool) Start(ctx context.Context) {
 		case client := <-p.Register:
 			// using counter for testing
 			p.counter++
-			client.Player.Plid = p.counter
+			client.User.Id = p.counter
 
 			p.Connections[client.Fd] = client
 
@@ -69,7 +69,7 @@ func (p *Pool) Start(ctx context.Context) {
 		case event := <-p.EpollEvents:
 			connections := make([]*Client, 0, len(event.Events))
 			for i := range event.Events {
-				conn, ok := p.Connections[int(event.Events[i].Fd)]
+				conn, ok := p.Connections[event.Events[i].Fd]
 				if !ok {
 					continue
 				}
@@ -93,7 +93,7 @@ func (p *Pool) Start(ctx context.Context) {
 				return client.SendMessage(ctx, event.Body)
 			}
 
-			stream := pipelines.StreamMap[int, *Client](ctx, p.Connections)
+			stream := pipelines.StreamMap[int32, *Client](ctx, p.Connections)
 			fanOut := pipelines.FanOut(ctx, stream, sendMsg, MaxSendFan)
 			errChan := pipelines.FanIn(ctx, fanOut...)
 

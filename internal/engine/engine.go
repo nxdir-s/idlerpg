@@ -83,20 +83,20 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 	}
 }
 
-func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Client) {
-	if len(players) == 0 {
-		fmt.Fprint(os.Stdout, "0 players connected...\n")
+func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Client) {
+	if len(users) == 0 {
+		fmt.Fprint(os.Stdout, "0 users connected...\n")
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "processings %d player actions...\n", len(players))
+	fmt.Fprintf(os.Stdout, "processings %d user actions...\n", len(users))
 
-	stream := pipelines.StreamMap[int, *server.Client](ctx, players)
+	stream := pipelines.StreamMap[int32, *server.Client](ctx, users)
 
 	fanOutChannels := pipelines.FanOut(ctx, stream, ngin.Simulate, SimulateMaxFan)
 	playerEvents := pipelines.FanIn(ctx, fanOutChannels...)
 
-	kafkaFanOut := pipelines.FanOut(ctx, playerEvents, ngin.kafka.SendPlayerEvent, KafkaMaxFan)
+	kafkaFanOut := pipelines.FanOut(ctx, playerEvents, ngin.kafka.SendUserEvent, KafkaMaxFan)
 	errChan := pipelines.FanIn(ctx, kafkaFanOut...)
 
 	for err := range errChan {
@@ -107,17 +107,17 @@ func (ngin *GameEngine) process(ctx context.Context, players map[int]*server.Cli
 		default:
 			if err != nil {
 				// TODO: figure out how to handle replays. Maybe dlq?
-				fmt.Fprintf(os.Stdout, "error sending player event: %s\n", err.Error())
+				fmt.Fprintf(os.Stdout, "error sending user event: %s\n", err.Error())
 			}
 		}
 	}
 }
 
 // Simulate simulates player actions
-func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *protobuf.PlayerEvent {
-	return &protobuf.PlayerEvent{
-		Plid:   client.Player.Plid,
-		Action: protobuf.Action(int32(client.Player.Action)),
+func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *protobuf.UserEvent {
+	return &protobuf.UserEvent{
+		Id:     client.User.Id,
+		Action: protobuf.Action(client.User.State.Action),
 		Exp:    rand.Int31n(MaxRandExp),
 	}
 }
