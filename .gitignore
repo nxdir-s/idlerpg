@@ -1,5 +1,8 @@
 run.sh
 gameserver
 webserver
+main
 
-tmp/
+/tmp
+
+/node_modules

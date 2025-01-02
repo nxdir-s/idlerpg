@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,9 +13,10 @@ import (
 )
 
 const (
+	// GoogleOAuthURL  string = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
 	LoginURL        string = "http://localhost:4000/login"
 	RedirectURL     string = "http://localhost:8080/auth/google/callback"
-	GoogleOAuthURL  string = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
+	GoogleOAuthURL  string = "https://www.googleapis.com/oauth2/v2/userinfo"
 	StateCookieName string = "oauthstate"
 )
 
@@ -45,6 +47,16 @@ func httpHandler(fn ServerHandler) http.HandlerFunc {
 	}
 }
 
+type GoogleUserInfo struct {
+	Id        string `json:"id"`
+	Email     string `json:"email"`
+	Verified  bool   `json:"verified_email"`
+	Name      string `json:"name"`
+	FirstName string `json:"given_name"`
+	LastName  string `json:"family_name"`
+	Picture   string `json:"picture"`
+}
+
 type Server struct {
 	mux       http.ServeMux
 	googleCfg *oauth2.Config
@@ -67,8 +79,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) googleLogin(w http.ResponseWriter, r *http.Request) error {
 	verifier := generateVerifier(w)
-	url := s.googleCfg.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
 
+	url := s.googleCfg.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 
 	return nil
@@ -80,12 +92,27 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) error {
 		return &ErrReadCookie{err}
 	}
 
-	if r.FormValue("state") != oauthState.Value {
-		fmt.Fprint(os.Stdout, "invalid oauth state\n")
-		http.Redirect(w, r, LoginURL, http.StatusPermanentRedirect)
-
-		return nil
+	token, err := s.googleCfg.Exchange(r.Context(), r.FormValue("code"), oauth2.VerifierOption(oauthState.Value))
+	if err != nil {
+		return err
 	}
+
+	resp, err := s.googleCfg.Client(r.Context(), token).Get(GoogleOAuthURL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var userInfo GoogleUserInfo
+	err = json.NewDecoder(resp.Body).Decode(&userInfo)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(w, "UserInfo: %+v\n", userInfo)
+
+	// Get/Create User
+	// Respond with JWT
 
 	return nil
 }
