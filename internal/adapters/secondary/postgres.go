@@ -245,6 +245,43 @@ const UserIdQuery string = `
     WHERE email = @email
 `
 
+func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) {
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	ctx, span := tracer.Start(ctx, spans.UserExists,
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"id": id,
+	}
+
+	var userId int
+	err = a.conn.QueryRow(ctx, UserExistsQuery, args).Scan(&userId)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		err = &ErrQueryRow{err}
+		util.RecordError(span, spans.UserExists+" failed", err)
+
+		return false, err
+	}
+
+	if userId == 0 || errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+const UserExistsQuery string = `
+    SELECT id
+    FROM users
+    WHERE id = @id
+`
+
 func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, error) {
 	tracer, err := util.GetTracer(ctx)
 	if err != nil {
