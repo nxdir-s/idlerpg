@@ -56,3 +56,7 @@ func (s *UserService) Rollback(ctx context.Context) error {
 func (s *UserService) GetUserID(ctx context.Context, email string) (int, error) {
 	return s.db.GetUserID(ctx, email)
 }
+
+func (s *UserService) UserExists(ctx context.Context, email string) (bool, error) {
+	return s.db.EmailExists(ctx, email)
+}

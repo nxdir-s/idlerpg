@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/nxdir-s/idlerpg/internal/ports"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -35,35 +34,16 @@ func (e *ErrInvalidState) Error() string {
 	return "invalid oauth state: " + e.err.Error()
 }
 
-type ServerHandler func(http.ResponseWriter, *http.Request) error
-
-func httpHandler(fn ServerHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := fn(w, r); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-type GoogleUserInfo struct {
-	Id        string `json:"id"`
-	Email     string `json:"email"`
-	Verified  bool   `json:"verified_email"`
-	Name      string `json:"name"`
-	FirstName string `json:"given_name"`
-	LastName  string `json:"family_name"`
-	Picture   string `json:"picture"`
-}
-
 type Server struct {
-	mux       http.ServeMux
-	googleCfg *oauth2.Config
+	auth   ports.AuthPort
+	mux    http.ServeMux
+	google *oauth2.Config
 }
 
-func NewServer(ctx context.Context) (*Server, error) {
+func NewServer(ctx context.Context, adapter ports.AuthPort) (*Server, error) {
 	s := &Server{
-		googleCfg: googleConfig(),
+		auth:   adapter,
+		google: googleConfig(),
 	}
 
 	s.mux.HandleFunc("GET /auth/google/login", httpHandler(s.googleLogin))
@@ -79,7 +59,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) googleLogin(w http.ResponseWriter, r *http.Request) error {
 	verifier := generateVerifier(w)
 
-	url := s.googleCfg.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
+	url := s.google.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 
 	return nil
@@ -91,12 +71,12 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) error {
 		return &ErrReadCookie{err}
 	}
 
-	token, err := s.googleCfg.Exchange(r.Context(), r.FormValue("code"), oauth2.VerifierOption(oauthState.Value))
+	token, err := s.google.Exchange(r.Context(), r.FormValue("code"), oauth2.VerifierOption(oauthState.Value))
 	if err != nil {
 		return err
 	}
 
-	resp, err := s.googleCfg.Client(r.Context(), token).Get(GoogleOAuthURL)
+	resp, err := s.google.Client(r.Context(), token).Get(GoogleOAuthURL)
 	if err != nil {
 		return err
 	}
@@ -126,17 +106,4 @@ func generateVerifier(w http.ResponseWriter) string {
 	})
 
 	return verifier
-}
-
-func googleConfig() *oauth2.Config {
-	return &oauth2.Config{
-		RedirectURL:  RedirectURL,
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
-	}
 }

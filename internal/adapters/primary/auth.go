@@ -16,12 +16,14 @@ func (e *ErrInvalidToken) Error() string {
 }
 
 type AuthAdapter struct {
-	jwt ports.JWTPort
+	users ports.UsersPort
+	jwt   ports.JWTPort
 }
 
-func NewAuthAdapter(ctx context.Context, jwt ports.JWTPort) (*AuthAdapter, error) {
+func NewAuthAdapter(ctx context.Context, users ports.UsersPort, jwt ports.JWTPort) (*AuthAdapter, error) {
 	return &AuthAdapter{
-		jwt: jwt,
+		users: users,
+		jwt:   jwt,
 	}, nil
 }
 

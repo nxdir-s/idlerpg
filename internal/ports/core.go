@@ -3,11 +3,17 @@ package ports
 import (
 	"context"
 	"time"
+
+	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 )
 
 type UsersPort interface{}
 
-type UserServicePort interface{}
+type UserServicePort interface {
+	GetUserID(ctx context.Context, email string) (int, error)
+	EmailExists(ctx context.Context, email string) (bool, error)
+	CreateUser(ctx context.Context, email string) (int, error)
+}
 
 type UserTxServicePort interface {
 	UserServicePort
@@ -16,7 +22,8 @@ type UserTxServicePort interface {
 }
 
 type JWTPort interface {
-	IssueToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)
+	IssueToken(ctx context.Context, id int, email string) (*valobj.Token, error)
+	IssueAccessToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)
 	IssueRefreshToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)
 
 	ValidAccessToken(ctx context.Context, tokenStr string) error

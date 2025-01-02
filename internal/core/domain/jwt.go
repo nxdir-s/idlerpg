@@ -7,6 +7,12 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/nxdir-s/idlerpg/internal/core/valobj"
+)
+
+const (
+	AccessTokenExpTime  int = 4
+	RefreshTokenExpTime int = 24
 )
 
 type ErrIssueToken struct {
@@ -65,7 +71,25 @@ func NewJWT(accessKey string, refreshKey string) *JWT {
 	}
 }
 
-func (j *JWT) IssueToken(ctx context.Context, userId int, email string, expires time.Time) (string, error) {
+func (j *JWT) IssueToken(ctx context.Context, id int, email string) (*valobj.Token, error) {
+	access, err := j.IssueAccessToken(ctx, id, email, time.Now().Add(time.Duration(AccessTokenExpTime)*time.Hour))
+	if err != nil {
+		return nil, err
+	}
+
+	refresh, err := j.IssueRefreshToken(ctx, id, email, time.Now().Add(time.Duration(RefreshTokenExpTime)*time.Hour))
+	if err != nil {
+		return nil, err
+	}
+
+	return &valobj.Token{
+		Access:  access,
+		Refresh: refresh,
+	}, nil
+}
+
+// IssueAccessToken creates an access token
+func (j *JWT) IssueAccessToken(ctx context.Context, userId int, email string, expires time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.RegisteredClaims{
 		Issuer:    "test",
 		Subject:   strconv.Itoa(userId),
@@ -83,6 +107,7 @@ func (j *JWT) IssueToken(ctx context.Context, userId int, email string, expires 
 	return tok, nil
 }
 
+// IssueRefreshToken creates a refresh token
 func (j *JWT) IssueRefreshToken(ctx context.Context, userId int, email string, expires time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.RegisteredClaims{
 		Issuer:    "test",
