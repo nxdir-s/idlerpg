@@ -1,6 +1,9 @@
 package ports
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type UsersPort interface{}
 
@@ -12,12 +15,10 @@ type UserTxServicePort interface {
 	Rollback(ctx context.Context) error
 }
 
-type PlayersPort interface{}
+type JWTPort interface {
+	IssueToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)
+	IssueRefreshToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)
 
-type PlayerServicePort interface{}
-
-type PlayerTxServicePort interface {
-	PlayerServicePort
-	Commit(ctx context.Context) error
-	Rollback(ctx context.Context) error
+	ValidAccessToken(ctx context.Context, tokenStr string) error
+	ValidRefreshToken(ctx context.Context, tokenStr string) error
 }
