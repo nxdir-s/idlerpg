@@ -3,6 +3,8 @@ gameserver
 webserver
 main
 
+/infrastructure/k8s/imports/k8s
+
 /tmp
 
 /node_modules

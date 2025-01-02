@@ -13,11 +13,10 @@ import (
 )
 
 const (
-	// GoogleOAuthURL  string = "https://www.googleapis.com/oauth2/v2/userinfo?access_token="
+	StateCookieName string = "oauthstate"
 	LoginURL        string = "http://localhost:4000/login"
 	RedirectURL     string = "http://localhost:8080/auth/google/callback"
 	GoogleOAuthURL  string = "https://www.googleapis.com/oauth2/v2/userinfo"
-	StateCookieName string = "oauthstate"
 )
 
 type ErrReadCookie struct {
