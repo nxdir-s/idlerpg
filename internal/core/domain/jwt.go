@@ -1,4 +1,4 @@
-package auth
+package domain
 
 import (
 	"context"
@@ -128,6 +128,7 @@ func validTime(token *jwt.Token) error {
 	return nil
 }
 
+// parse verifies the token signing method and returns a parsed jwt
 func parse(tokenStr string, key string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
