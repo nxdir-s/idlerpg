@@ -101,17 +101,35 @@ func (j *JWT) IssueRefreshToken(ctx context.Context, userId int, email string, e
 	return tok, nil
 }
 
-func (j *JWT) ValidAccessToken(ctx context.Context, tokenStr string) (bool, error) {
+// ValidAccessToken returns an error if the supplied token is invalid
+func (j *JWT) ValidAccessToken(ctx context.Context, tokenStr string) error {
 	token, err := parse(tokenStr, j.accessKey)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if err := validTime(token); err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
+}
+
+// ValidRefreshToken returns an error if the supplied token is invalid
+func (j *JWT) ValidRefreshToken(ctx context.Context, tokenStr string) error {
+	token, err := parse(tokenStr, j.refreshKey)
+	if err != nil {
+		return err
+	}
+
+	if err := validTime(token); err != nil {
+		return err
+	}
+
+	// get subject from token
+	// check if user exists in db
+
+	return nil
 }
 
 // validTime returns an error if the token fails validations
