@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.35.1
 // 	protoc        v5.28.2
-// source: events.proto
+// source: protobuf/events.proto
 
 package protobuf
 
@@ -56,11 +56,11 @@ func (x Action) String() string {
 }
 
 func (Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_events_proto_enumTypes[0].Descriptor()
+	return file_protobuf_events_proto_enumTypes[0].Descriptor()
 }
 
 func (Action) Type() protoreflect.EnumType {
-	return &file_events_proto_enumTypes[0]
+	return &file_protobuf_events_proto_enumTypes[0]
 }
 
 func (x Action) Number() protoreflect.EnumNumber {
@@ -69,34 +69,34 @@ func (x Action) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Action.Descriptor instead.
 func (Action) EnumDescriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{0}
+	return file_protobuf_events_proto_rawDescGZIP(), []int{0}
 }
 
-type PlayerEvent struct {
+type UserEvent struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Plid   int32  `protobuf:"varint,1,opt,name=plid,proto3" json:"plid,omitempty"`
+	Id     int32  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Action Action `protobuf:"varint,2,opt,name=action,proto3,enum=idlerpg.Action" json:"action,omitempty"`
 	Exp    int32  `protobuf:"varint,3,opt,name=exp,proto3" json:"exp,omitempty"`
 }
 
-func (x *PlayerEvent) Reset() {
-	*x = PlayerEvent{}
-	mi := &file_events_proto_msgTypes[0]
+func (x *UserEvent) Reset() {
+	*x = UserEvent{}
+	mi := &file_protobuf_events_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PlayerEvent) String() string {
+func (x *UserEvent) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PlayerEvent) ProtoMessage() {}
+func (*UserEvent) ProtoMessage() {}
 
-func (x *PlayerEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_events_proto_msgTypes[0]
+func (x *UserEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_protobuf_events_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -107,70 +107,70 @@ func (x *PlayerEvent) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PlayerEvent.ProtoReflect.Descriptor instead.
-func (*PlayerEvent) Descriptor() ([]byte, []int) {
-	return file_events_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use UserEvent.ProtoReflect.Descriptor instead.
+func (*UserEvent) Descriptor() ([]byte, []int) {
+	return file_protobuf_events_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PlayerEvent) GetPlid() int32 {
+func (x *UserEvent) GetId() int32 {
 	if x != nil {
-		return x.Plid
+		return x.Id
 	}
 	return 0
 }
 
-func (x *PlayerEvent) GetAction() Action {
+func (x *UserEvent) GetAction() Action {
 	if x != nil {
 		return x.Action
 	}
 	return Action_UNKNOWN
 }
 
-func (x *PlayerEvent) GetExp() int32 {
+func (x *UserEvent) GetExp() int32 {
 	if x != nil {
 		return x.Exp
 	}
 	return 0
 }
 
-var File_events_proto protoreflect.FileDescriptor
+var File_protobuf_events_proto protoreflect.FileDescriptor
 
-var file_events_proto_rawDesc = []byte{
-	0x0a, 0x0c, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x07,
-	0x69, 0x64, 0x6c, 0x65, 0x72, 0x70, 0x67, 0x22, 0x5c, 0x0a, 0x0b, 0x50, 0x6c, 0x61, 0x79, 0x65,
-	0x72, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x6c, 0x69, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x70, 0x6c, 0x69, 0x64, 0x12, 0x27, 0x0a, 0x06, 0x61, 0x63,
-	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0f, 0x2e, 0x69, 0x64, 0x6c,
-	0x65, 0x72, 0x70, 0x67, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x61, 0x63, 0x74,
-	0x69, 0x6f, 0x6e, 0x12, 0x10, 0x0a, 0x03, 0x65, 0x78, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05,
-	0x52, 0x03, 0x65, 0x78, 0x70, 0x2a, 0x37, 0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12,
-	0x0b, 0x0a, 0x07, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05,
-	0x46, 0x49, 0x47, 0x48, 0x54, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x43, 0x52, 0x41, 0x46, 0x54,
-	0x10, 0x02, 0x12, 0x0a, 0x0a, 0x06, 0x47, 0x41, 0x54, 0x48, 0x45, 0x52, 0x10, 0x03, 0x42, 0x0b,
-	0x5a, 0x09, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+var file_protobuf_events_proto_rawDesc = []byte{
+	0x0a, 0x15, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74,
+	0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x07, 0x69, 0x64, 0x6c, 0x65, 0x72, 0x70, 0x67,
+	0x22, 0x56, 0x0a, 0x09, 0x55, 0x73, 0x65, 0x72, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12, 0x0e, 0x0a,
+	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x69, 0x64, 0x12, 0x27, 0x0a,
+	0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0f, 0x2e,
+	0x69, 0x64, 0x6c, 0x65, 0x72, 0x70, 0x67, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x10, 0x0a, 0x03, 0x65, 0x78, 0x70, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x03, 0x65, 0x78, 0x70, 0x2a, 0x37, 0x0a, 0x06, 0x41, 0x63, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x0b, 0x0a, 0x07, 0x55, 0x4e, 0x4b, 0x4e, 0x4f, 0x57, 0x4e, 0x10, 0x00, 0x12,
+	0x09, 0x0a, 0x05, 0x46, 0x49, 0x47, 0x48, 0x54, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x43, 0x52,
+	0x41, 0x46, 0x54, 0x10, 0x02, 0x12, 0x0a, 0x0a, 0x06, 0x47, 0x41, 0x54, 0x48, 0x45, 0x52, 0x10,
+	0x03, 0x42, 0x0b, 0x5a, 0x09, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_events_proto_rawDescOnce sync.Once
-	file_events_proto_rawDescData = file_events_proto_rawDesc
+	file_protobuf_events_proto_rawDescOnce sync.Once
+	file_protobuf_events_proto_rawDescData = file_protobuf_events_proto_rawDesc
 )
 
-func file_events_proto_rawDescGZIP() []byte {
-	file_events_proto_rawDescOnce.Do(func() {
-		file_events_proto_rawDescData = protoimpl.X.CompressGZIP(file_events_proto_rawDescData)
+func file_protobuf_events_proto_rawDescGZIP() []byte {
+	file_protobuf_events_proto_rawDescOnce.Do(func() {
+		file_protobuf_events_proto_rawDescData = protoimpl.X.CompressGZIP(file_protobuf_events_proto_rawDescData)
 	})
-	return file_events_proto_rawDescData
+	return file_protobuf_events_proto_rawDescData
 }
 
-var file_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_events_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_events_proto_goTypes = []any{
-	(Action)(0),         // 0: idlerpg.Action
-	(*PlayerEvent)(nil), // 1: idlerpg.PlayerEvent
+var file_protobuf_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_protobuf_events_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_protobuf_events_proto_goTypes = []any{
+	(Action)(0),       // 0: idlerpg.Action
+	(*UserEvent)(nil), // 1: idlerpg.UserEvent
 }
-var file_events_proto_depIdxs = []int32{
-	0, // 0: idlerpg.PlayerEvent.action:type_name -> idlerpg.Action
+var file_protobuf_events_proto_depIdxs = []int32{
+	0, // 0: idlerpg.UserEvent.action:type_name -> idlerpg.Action
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -178,28 +178,28 @@ var file_events_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_events_proto_init() }
-func file_events_proto_init() {
-	if File_events_proto != nil {
+func init() { file_protobuf_events_proto_init() }
+func file_protobuf_events_proto_init() {
+	if File_protobuf_events_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_events_proto_rawDesc,
+			RawDescriptor: file_protobuf_events_proto_rawDesc,
 			NumEnums:      1,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_events_proto_goTypes,
-		DependencyIndexes: file_events_proto_depIdxs,
-		EnumInfos:         file_events_proto_enumTypes,
-		MessageInfos:      file_events_proto_msgTypes,
+		GoTypes:           file_protobuf_events_proto_goTypes,
+		DependencyIndexes: file_protobuf_events_proto_depIdxs,
+		EnumInfos:         file_protobuf_events_proto_enumTypes,
+		MessageInfos:      file_protobuf_events_proto_msgTypes,
 	}.Build()
-	File_events_proto = out.File
-	file_events_proto_rawDesc = nil
-	file_events_proto_goTypes = nil
-	file_events_proto_depIdxs = nil
+	File_protobuf_events_proto = out.File
+	file_protobuf_events_proto_rawDesc = nil
+	file_protobuf_events_proto_goTypes = nil
+	file_protobuf_events_proto_depIdxs = nil
 }

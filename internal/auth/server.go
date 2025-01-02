@@ -66,8 +66,8 @@ func NewServer(ctx context.Context) (*Server, error) {
 		googleCfg: googleConfig(),
 	}
 
-	s.mux.HandleFunc("/auth/google/login", httpHandler(s.googleLogin))
-	s.mux.HandleFunc("/auth/google/callback", httpHandler(s.googleCallback))
+	s.mux.HandleFunc("GET /auth/google/login", httpHandler(s.googleLogin))
+	s.mux.HandleFunc("GET /auth/google/callback", httpHandler(s.googleCallback))
 
 	return s, nil
 }

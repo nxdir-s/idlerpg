@@ -7,12 +7,13 @@ import (
 )
 
 type KafkaPort interface {
-	SendPlayerEvent(ctx context.Context, event *protobuf.PlayerEvent) error
+	SendUserEvent(ctx context.Context, event *protobuf.UserEvent) error
 	CloseProducer() error
 }
 
 type DatabasePort interface {
 	NewTransactionAdapter(ctx context.Context) (DatabaseTxPort, error)
+	GetUserID(ctx context.Context, email string) (int, error)
 }
 
 type DatabaseTxPort interface {
