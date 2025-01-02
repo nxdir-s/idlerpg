@@ -13,6 +13,17 @@ const (
 	ErrInvalidToken string = "invalid or expired token"
 )
 
+type ServerHandler func(http.ResponseWriter, *http.Request) error
+
+func httpHandler(fn ServerHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := fn(w, r); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 func NewAuthHandler(adapter ports.AuthPort) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return authHandler(adapter, h)
