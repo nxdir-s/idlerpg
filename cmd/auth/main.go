@@ -31,7 +31,7 @@ func main() {
 
 	s, err := auth.NewServer(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create web server: %s\n", err.Error())
+		fmt.Fprintf(os.Stdout, "failed to create auth server: %s\n", err.Error())
 		os.Exit(1)
 	}
 
