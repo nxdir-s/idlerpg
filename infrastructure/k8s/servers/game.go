@@ -1,4 +1,4 @@
-package server
+package servers
 
 import (
 	"example.com/charts/imports/k8s"
@@ -37,7 +37,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 	}
 
 	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
-	label := map[string]*string{"app": id}
+	labels := map[string]*string{"name": id}
 
 	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), nil)
 
@@ -47,7 +47,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 		},
 		Spec: &k8s.ServiceSpec{
 			Type:     jsii.String("LoadBalancer"),
-			Selector: &label,
+			Selector: &labels,
 			Ports: &[]*k8s.ServicePort{
 				{
 					Protocol:   jsii.String("TCP"),
@@ -60,18 +60,26 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 
 	deployment := k8s.NewKubeStatefulSet(server, id, &k8s.KubeStatefulSetProps{
 		Metadata: &k8s.ObjectMeta{
-			Name: id,
+			Labels: &labels,
+			Name:   id,
 		},
 		Spec: &k8s.StatefulSetSpec{
-			ServiceName: service.Name(),
-			Replicas:    replicas,
+			MinReadySeconds: jsii.Number(3),
+			ServiceName:     service.Name(),
+			Replicas:        replicas,
 			Selector: &k8s.LabelSelector{
-				MatchLabels: &label,
+				MatchLabels: &labels,
+			},
+			UpdateStrategy: &k8s.StatefulSetUpdateStrategy{
+				RollingUpdate: &k8s.RollingUpdateStatefulSetStrategy{
+					MaxUnavailable: k8s.IntOrString_FromString(jsii.String("25%")),
+				},
+				Type: jsii.String("RollingUpdate"),
 			},
 			Template: &k8s.PodTemplateSpec{
 				Metadata: &k8s.ObjectMeta{
 					Labels: &map[string]*string{
-						"app":                   label["app"],
+						"name":                  labels["name"],
 						"network/kafka-network": jsii.String("true"),
 					},
 				},
@@ -89,6 +97,17 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 							Ports: &[]*k8s.ContainerPort{
 								{
 									ContainerPort: port,
+								},
+							},
+							Env: &[]*k8s.EnvVar{
+								{
+									Name: jsii.String("POD_IP"),
+									ValueFrom: &k8s.EnvVarSource{
+										FieldRef: &k8s.ObjectFieldSelector{
+											ApiVersion: jsii.String("v1"),
+											FieldPath:  jsii.String("status.podIP"),
+										},
+									},
 								},
 							},
 							EnvFrom: &[]*k8s.EnvFromSource{
@@ -129,7 +148,13 @@ func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k
 		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
-			"BROKERS": jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
+			"BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
+			"AUTHUSER":                           jsii.String("grafanaopsuser"),
+			"AUTHPASSWORD":                       jsii.String("password"),
+			"TRACING_COLLECTOR_HOST":             jsii.String("alloy"),
+			"TRACING_COLLECTOR_PORT":             jsii.String("4317"),
+			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
+			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 		},
 	})
 }
