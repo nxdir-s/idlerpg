@@ -2,6 +2,7 @@ package secondary
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/nxdir-s/idlerpg/protobuf"
+	"github.com/xdg-go/scram"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -28,6 +30,14 @@ type ErrSaramaCfg struct {
 
 func (e *ErrSaramaCfg) Error() string {
 	return "error creating sarama config: " + e.err.Error()
+}
+
+type ErrRPCfg struct {
+	err error
+}
+
+func (e *ErrRPCfg) Error() string {
+	return "error creating Redpanda config: " + e.err.Error()
 }
 
 type ErrUnknownStrategy struct {
@@ -148,6 +158,34 @@ func NewConsumerCfg(strategy string) (*sarama.Config, error) {
 	return config, nil
 }
 
+// NewRPProducerCfg creates a config for RedPanda
+func NewRPProducerCfg(userName string, pass string) (*sarama.Config, error) {
+	config := sarama.NewConfig()
+
+	version, err := sarama.ParseKafkaVersion("2.0.0")
+	if err != nil {
+		return nil, err
+	}
+
+	config.Version = version
+	config.ClientID = "sasl_scram_client"
+	config.Metadata.Full = true
+
+	config.Producer.Retry.Max = ProducerMaxRetry
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
+
+	config.Net.SASL.Enable = true
+	config.Net.SASL.User = userName
+	config.Net.SASL.Password = pass
+	config.Net.SASL.Handshake = true
+	config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha256.New} }
+	config.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+
+	return config, nil
+}
+
 type SaramaAdapterOpt func(a *SaramaAdapter) error
 
 // WithSaramaConsumer adds a sarama.ConsumerGroup to the adapter
@@ -172,6 +210,24 @@ func WithSaramaConsumer() SaramaAdapterOpt {
 func WithSaramaProducer() SaramaAdapterOpt {
 	return func(a *SaramaAdapter) error {
 		producer, err := sarama.NewSyncProducer(a.brokers, NewSyncProducerCfg())
+		if err != nil {
+			return &ErrProducerStart{err}
+		}
+		a.producer = producer
+
+		return nil
+	}
+}
+
+// WithRedPandaProducer adds a sarama.SyncProducer for RedPanda to the adapter
+func WithRedPandaProducer(username string, pass string) SaramaAdapterOpt {
+	return func(a *SaramaAdapter) error {
+		cfg, err := NewRPProducerCfg(username, pass)
+		if err != nil {
+			return &ErrRPCfg{err}
+		}
+
+		producer, err := sarama.NewSyncProducer(a.brokers, cfg)
 		if err != nil {
 			return &ErrProducerStart{err}
 		}
@@ -329,4 +385,35 @@ func (a *SaramaAdapter) toggleConsumption() {
 	}
 
 	a.paused = !a.paused
+}
+
+type XDGSCRAMClient struct {
+	*scram.Client
+	*scram.ClientConversation
+	scram.HashGeneratorFcn
+}
+
+func (c *XDGSCRAMClient) Begin(userName, password, authzID string) error {
+	client, err := c.HashGeneratorFcn.NewClient(userName, password, authzID)
+	if err != nil {
+		return err
+	}
+
+	c.Client = client
+	c.ClientConversation = c.Client.NewConversation()
+
+	return nil
+}
+
+func (c *XDGSCRAMClient) Step(challenge string) (string, error) {
+	response, err := c.ClientConversation.Step(challenge)
+	if err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
+func (c *XDGSCRAMClient) Done() bool {
+	return c.ClientConversation.Done()
 }

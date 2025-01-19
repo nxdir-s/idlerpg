@@ -1,4 +1,4 @@
 language: go
-app: "go run ."
+app: "GOOS=darwin go run ."
 imports:
   - k8s

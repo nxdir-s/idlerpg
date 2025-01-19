@@ -54,15 +54,33 @@ func main() {
 		os.Exit(1)
 	}
 
+	rpUser := os.Getenv("REDPANDA_SASL_USERNAME")
+	if brokerStr == "" {
+		fmt.Fprint(os.Stdout, "found empty string for REDPANDA_SASL_USERNAME\n")
+		os.Exit(1)
+	}
+
+	rpPass := os.Getenv("REDPANDA_SASL_PASSWORD")
+	if brokerStr == "" {
+		fmt.Fprint(os.Stdout, "found empty string for REDPANDA_SASL_PASSWORD\n")
+		os.Exit(1)
+	}
+
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithSaramaProducer())
+	kafka, err = secondary.NewFranzAdapter(ctx, secondary.WithFranzProducer(strings.Split(brokerStr, ","), rpUser, rpPass))
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
 	}
-	defer kafka.CloseProducer()
+
+	// kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithRedPandaProducer(rpUser, rpPass))
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
+	// 	os.Exit(1)
+	// }
+	// defer kafka.CloseProducer()
 
 	pool := server.NewPool(ctx)
 	ngin := engine.NewGameEngine(ctx, pool, kafka)

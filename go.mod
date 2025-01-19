@@ -9,9 +9,13 @@ require (
 	github.com/aws/jsii-runtime-go v1.105.0
 	github.com/coder/websocket v1.8.12
 	github.com/gobwas/ws v1.4.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/nxdir-s/pipelines v1.0.0
 	github.com/nxdir-s/telemetry v0.0.1
+	github.com/twmb/franz-go v1.18.0
+	github.com/xdg-go/scram v1.1.2
+	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/metric v1.30.0
 	go.opentelemetry.io/otel/trace v1.30.0
 	golang.org/x/net v0.33.0
@@ -37,7 +41,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
@@ -57,10 +60,12 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.9.0 // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/yuin/goldmark v1.4.13 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/lambda v0.55.0 // indirect
 	go.opentelemetry.io/contrib/propagators/aws v1.30.0 // indirect
-	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.6.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0 // indirect
