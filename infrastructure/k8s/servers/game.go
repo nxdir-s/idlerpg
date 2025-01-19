@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	GameServerImage string = "idlerpg/gameserver:latest"
+
 	ServerPort     int = 3000
 	ServerReplicas int = 1
 )
@@ -91,8 +93,8 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 					RestartPolicy:      jsii.String("Always"),
 					Containers: &[]*k8s.Container{
 						{
-							Image:           props.Image,
-							ImagePullPolicy: jsii.String("Never"),
+							Image:           jsii.String(GameServerImage),
+							ImagePullPolicy: jsii.String("Always"),
 							Name:            id,
 							Ports: &[]*k8s.ContainerPort{
 								{
@@ -119,12 +121,12 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 							},
 							Resources: &k8s.ResourceRequirements{
 								Requests: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
-									"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("1000m")),
+									"memory": k8s.Quantity_FromString(jsii.String("1Gi")),
 								},
 								Limits: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("3000m")),
-									"memory": k8s.Quantity_FromString(jsii.String("4Gi")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
+									"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
 								},
 							},
 						},
@@ -148,11 +150,12 @@ func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k
 		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
-			"BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
-			"AUTHUSER":                           jsii.String("grafanaopsuser"),
-			"AUTHPASSWORD":                       jsii.String("password"),
-			"TRACING_COLLECTOR_HOST":             jsii.String("alloy"),
-			"TRACING_COLLECTOR_PORT":             jsii.String("4317"),
+			// "BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
+			"BROKERS":                            jsii.String("cu6115qp52gaqn6975dg.any.us-east-1.mpx.prd.cloud.redpanda.com:9092"),
+			"REDPANDA_SASL_USERNAME":             jsii.String("grafanaopsuser"),
+			"REDPANDA_SASL_PASSWORD":             jsii.String("password"),
+			"OTEL_COLLECTOR_HOST":                jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local"),
+			"OTEL_COLLECTOR_PORT":                jsii.String("4317"),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 		},
