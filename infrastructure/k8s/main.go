@@ -45,6 +45,20 @@ func NewObservabilityChart(scope constructs.Construct, id string, props *Observa
 	return chart
 }
 
+type ObservabilityChartProps struct {
+	cdk8s.ChartProps
+}
+
+func NewObservabilityChart(scope constructs.Construct, id string, props *ObservabilityChartProps) cdk8s.Chart {
+	var cprops cdk8s.ChartProps
+	if props != nil {
+		cprops = props.ChartProps
+	}
+	chart := cdk8s.NewChart(scope, jsii.String(id), &cprops)
+
+	return chart
+}
+
 func main() {
 	app := cdk8s.NewApp(nil)
 
