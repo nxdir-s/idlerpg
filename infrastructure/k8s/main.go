@@ -21,7 +21,11 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 	// kafka.NewCluster(chart, jsii.String("kafka"), nil)
 
 	servers.NewGameServer(chart, jsii.String("gameserver"), &servers.GameServerProps{
-		Image: jsii.String("idlerpg:latest"),
+		Image: jsii.String("idlerpg/gameserver:latest"),
+	})
+
+	servers.NewWebServer(chart, jsii.String("webserver"), &servers.WebServerProps{
+		Image: jsii.String("idlerpg/webserver:latest"),
 	})
 
 	return chart
