@@ -3,6 +3,8 @@ gameserver
 webserver
 main
 
+*dist/idlerpg.k8s.yaml*
+
 /tmp
 
 /node_modules

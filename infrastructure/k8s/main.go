@@ -21,8 +21,26 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 	// kafka.NewCluster(chart, jsii.String("kafka"), nil)
 
 	servers.NewGameServer(chart, jsii.String("gameserver"), &servers.GameServerProps{
-		Image: jsii.String("idlerpg:latest"),
+		Image: jsii.String("idlerpg/gameserver:latest"),
 	})
+
+	servers.NewWebServer(chart, jsii.String("webserver"), &servers.WebServerProps{
+		Image: jsii.String("idlerpg/webserver:latest"),
+	})
+
+	return chart
+}
+
+type ObservabilityChartProps struct {
+	cdk8s.ChartProps
+}
+
+func NewObservabilityChart(scope constructs.Construct, id string, props *ObservabilityChartProps) cdk8s.Chart {
+	var cprops cdk8s.ChartProps
+	if props != nil {
+		cprops = props.ChartProps
+	}
+	chart := cdk8s.NewChart(scope, jsii.String(id), &cprops)
 
 	return chart
 }
