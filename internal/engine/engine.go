@@ -72,7 +72,7 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 			snapshot := <-reply
 
 			ngin.process(ctx, snapshot.Connections)
-			snapshot.Processed <- true
+			snapshot.Processed <- struct{}{}
 
 			event := ngin.buildEvent(t)
 

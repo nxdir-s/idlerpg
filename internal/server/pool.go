@@ -23,7 +23,7 @@ type Connections map[int32]*Client
 
 type Snapshot struct {
 	Connections Connections
-	Processed   chan bool
+	Processed   chan struct{}
 }
 
 type Pool struct {
@@ -81,7 +81,7 @@ func (p *Pool) Start(ctx context.Context) {
 		case req := <-p.Snapshot:
 			s := &Snapshot{
 				Connections: p.Connections,
-				Processed:   make(chan bool),
+				Processed:   make(chan struct{}),
 			}
 
 			req <- s
