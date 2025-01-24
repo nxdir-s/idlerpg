@@ -110,6 +110,60 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 										},
 									},
 								},
+								{
+									Name: jsii.String("BROKERS"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("redpanda-brokers"),
+											Key:  jsii.String("brokers"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("REDPANDA_SASL_USERNAME"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("redpanda-auth"),
+											Key:  jsii.String("username"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("REDPANDA_SASL_PASSWORD"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("redpanda-auth"),
+											Key:  jsii.String("password"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("PROFILE_URL"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("profiling"),
+											Key:  jsii.String("endpoint"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("GCLOUD_USER"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("grafana-auth"),
+											Key:  jsii.String("username"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("GCLOUD_PASSWORD"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("grafana-auth"),
+											Key:  jsii.String("password"),
+										},
+									},
+								},
 							},
 							EnvFrom: &[]*k8s.EnvFromSource{
 								{
@@ -123,10 +177,6 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 									"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
 									"memory": k8s.Quantity_FromString(jsii.String("16Mi")),
 								},
-								// Limits: &map[string]k8s.Quantity{
-								// 	"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
-								// 	"memory": k8s.Quantity_FromString(jsii.String("64Mi")),
-								// },
 							},
 						},
 					},
@@ -151,19 +201,13 @@ func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgPr
 			Name:      id,
 			Namespace: props.Namespace.Name(),
 		},
-		Immutable: jsii.Bool(true),
+		Immutable: jsii.Bool(false),
 		Data: &map[string]*string{
-			"BROKERS":                            jsii.String(""),
-			"REDPANDA_SASL_USERNAME":             jsii.String(""),
-			"REDPANDA_SASL_PASSWORD":             jsii.String(""),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
 			"OTEL_SERVICE_NAME":                  jsii.String("consumer"),
-			"PROFILE_URL":                        jsii.String(""),
-			"GCLOUD_USER":                        jsii.String(""),
-			"GCLOUD_PASSWORD":                    jsii.String(""),
-			"CONSUMER_GROUP_NAME":                jsii.String("idlerpg-dev"),
+			"CONSUMER_GROUP_NAME":                jsii.String("consumer-dev"),
 		},
 	})
 }

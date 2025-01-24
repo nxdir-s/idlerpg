@@ -2,6 +2,7 @@ package main
 
 import (
 	"example.com/charts/imports/k8s"
+	"example.com/charts/storage"
 
 	"example.com/charts/servers"
 	"github.com/aws/constructs-go/constructs/v10"
@@ -28,6 +29,10 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 		Metadata: &k8s.ObjectMeta{
 			Name: jsii.String(id),
 		},
+	})
+
+	storage.NewPostgresCluster(chart, jsii.String("database"), &storage.PostgresProps{
+		Namespace: namespace,
 	})
 
 	servers.NewGameServer(chart, jsii.String("gameserver"), &servers.GameServerProps{
