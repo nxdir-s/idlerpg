@@ -13,11 +13,10 @@ const (
 )
 
 type ConsumerProps struct {
-	Namespace     k8s.KubeNamespace
-	Image         *string
-	Replicas      *float64
-	Port          *float64
-	ContainerPort *float64
+	Namespace k8s.KubeNamespace
+	Image     *string
+	Replicas  *float64
+	Port      *float64
 }
 
 func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) constructs.Construct {
@@ -160,10 +159,11 @@ func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgPr
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
-			"OTEL_SERVICE_NAME":                  jsii.String("webserver"),
+			"OTEL_SERVICE_NAME":                  jsii.String("consumer"),
 			"PROFILE_URL":                        jsii.String(""),
 			"GCLOUD_USER":                        jsii.String(""),
 			"GCLOUD_PASSWORD":                    jsii.String(""),
+			"CONSUMER_GROUP_NAME":                jsii.String("idlerpg-dev"),
 		},
 	})
 }

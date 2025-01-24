@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	"github.com/grafana/pyroscope-go"
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
 	"github.com/nxdir-s/idlerpg/internal/engine"
+	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/server"
 )
@@ -24,6 +26,9 @@ const (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	logger := slog.New(logs.NewHandler(slog.NewTextHandler(os.Stdout, nil)))
+	slog.SetDefault(logger)
 
 	var rLimit syscall.Rlimit
 	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
@@ -130,18 +135,12 @@ func main() {
 	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewFranzAdapter(ctx, secondary.WithFranzProducer(strings.Split(brokerStr, ","), rpUser, rpPass))
+	kafka, err = secondary.NewFranzAdapter(ctx, logger, secondary.WithFranzProducer(strings.Split(brokerStr, ","), rpUser, rpPass))
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
 	}
-
-	// kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithRedPandaProducer(rpUser, rpPass))
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
-	// 	os.Exit(1)
-	// }
-	// defer kafka.CloseProducer()
+	defer kafka.CloseProducer()
 
 	pool := server.NewPool(ctx)
 	ngin := engine.NewGameEngine(ctx, pool, kafka)
