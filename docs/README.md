@@ -1,5 +1,5 @@
 # Project Docs
 
-## Architecture Diagram
+## Initial Architecture Diagram
 
-![Architecture Diagram](./Architecture.svg)
+![Architecture Diagram](./images/Architecture.svg)

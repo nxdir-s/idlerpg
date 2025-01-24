@@ -3,7 +3,6 @@ package secondary
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"log/slog"
 
 	"github.com/nxdir-s/idlerpg/protobuf"
@@ -108,14 +107,25 @@ func (a *FranzAdapter) ConsumeUserEvent(ctx context.Context) {
 			return
 		default:
 			fetches := a.consumer.PollFetches(ctx)
-			iter := fetches.RecordIter()
 
+			if errors := fetches.Errors(); len(errors) > 0 {
+				for _, e := range errors {
+					if e.Err == context.Canceled {
+						a.logger.Info("received interrupt", slog.Any("err", e.Err))
+						return
+					}
+
+					a.logger.Error("poll error", slog.Any("err", e))
+				}
+			}
+
+			iter := fetches.RecordIter()
 			for !iter.Done() {
 				record := iter.Next()
 
 				var msg protobuf.UserEvent
 				if err := proto.Unmarshal(record.Value, &msg); err != nil {
-					fmt.Printf("error decoding message: %v\n", err)
+					a.logger.Error("error decoding UserEvent", slog.Any("err", err))
 					continue
 				}
 
@@ -137,3 +147,4 @@ func (a *FranzAdapter) CloseConsumer() error {
 
 	return nil
 }
+
