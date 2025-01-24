@@ -6,7 +6,3 @@ start_index = 0
 [windows.editor]
 name = 'editor'
 cmd = ['vim .']
-
-[windows.docker]
-name = 'docker'
-cmd = ['docker compose up']
