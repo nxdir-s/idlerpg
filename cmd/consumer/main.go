@@ -11,6 +11,7 @@ import (
 
 	"github.com/grafana/pyroscope-go"
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
+	"github.com/nxdir-s/idlerpg/internal/consumers"
 	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 )
@@ -104,9 +105,11 @@ func main() {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
 	}
-	defer kafka.CloseConsumer()
 
-	go kafka.ConsumeUserEvent(ctx)
+	consumer := consumers.NewEventsConsumer(kafka, logger)
+	defer consumer.Close()
+
+	go consumer.Start(ctx)
 
 	select {
 	case <-ctx.Done():
