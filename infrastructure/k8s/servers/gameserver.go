@@ -117,6 +117,60 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 										},
 									},
 								},
+								{
+									Name: jsii.String("BROKERS"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("redpanda-brokers"),
+											Key:  jsii.String("brokers"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("REDPANDA_SASL_USERNAME"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("redpanda-auth"),
+											Key:  jsii.String("username"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("REDPANDA_SASL_PASSWORD"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("redpanda-auth"),
+											Key:  jsii.String("password"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("PROFILE_URL"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("profiling"),
+											Key:  jsii.String("endpoint"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("GCLOUD_USER"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("grafana-auth"),
+											Key:  jsii.String("username"),
+										},
+									},
+								},
+								{
+									Name: jsii.String("GCLOUD_PASSWORD"),
+									ValueFrom: &k8s.EnvVarSource{
+										SecretKeyRef: &k8s.SecretKeySelector{
+											Name: jsii.String("grafana-auth"),
+											Key:  jsii.String("password"),
+										},
+									},
+								},
 							},
 							EnvFrom: &[]*k8s.EnvFromSource{
 								{
@@ -130,10 +184,6 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 									"cpu":    k8s.Quantity_FromString(jsii.String("250m")),
 									"memory": k8s.Quantity_FromString(jsii.String("64Mi")),
 								},
-								// Limits: &map[string]k8s.Quantity{
-								// 	"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
-								// 	"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
-								// },
 							},
 						},
 					},
@@ -158,19 +208,13 @@ func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k
 			Name:      id,
 			Namespace: props.Namespace.Name(),
 		},
-		Immutable: jsii.Bool(true),
+		Immutable: jsii.Bool(false),
 		Data: &map[string]*string{
 			// "BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
-			"BROKERS":                            jsii.String(""),
-			"REDPANDA_SASL_USERNAME":             jsii.String(""),
-			"REDPANDA_SASL_PASSWORD":             jsii.String(""),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
 			"OTEL_SERVICE_NAME":                  jsii.String("gameserver"),
-			"PROFILE_URL":                        jsii.String(""),
-			"GCLOUD_USER":                        jsii.String(""),
-			"GCLOUD_PASSWORD":                    jsii.String(""),
 		},
 	})
 }

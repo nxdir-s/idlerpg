@@ -1,4 +1,5 @@
 language: go
-app: "GOOS=darwin go run ."
+app: GOOS=darwin go run .
 imports:
   - k8s
+  - https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.25/releases/cnpg-1.25.0.yaml
