@@ -92,8 +92,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	consumerName := os.Getenv("CONSUMER_GROUP_NAME")
+	if consumerName == "" {
+		fmt.Fprint(os.Stdout, "found empty string for CONSUMER_NAME\n")
+		os.Exit(1)
+	}
+
 	var kafka ports.KafkaPort
-	kafka, err := secondary.NewFranzAdapter(ctx, logger, secondary.WithFranzConsumer(strings.Split(brokerStr, ","), rpUser, rpPass))
+	kafka, err := secondary.NewFranzAdapter(ctx, logger, secondary.WithFranzConsumer(consumerName, strings.Split(brokerStr, ","), rpUser, rpPass))
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
