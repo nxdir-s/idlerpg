@@ -3,39 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
+	"log/slog"
 	"os"
 	"os/signal"
 	"runtime"
 	"strings"
-	"syscall"
 
 	"github.com/grafana/pyroscope-go"
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
-	"github.com/nxdir-s/idlerpg/internal/engine"
+	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/ports"
-	"github.com/nxdir-s/idlerpg/internal/server"
-)
-
-const (
-	DefaultAddr string = "0.0.0.0:3000"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	var rLimit syscall.Rlimit
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		fmt.Fprintf(os.Stdout, "failed to get RLIMIT: %s\n", err.Error())
-		os.Exit(1)
-	}
-
-	rLimit.Cur = rLimit.Max
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		fmt.Fprintf(os.Stdout, "failed to set RLIMIT: %s\n", err.Error())
-		os.Exit(1)
-	}
+	logger := slog.New(logs.NewHandler(slog.NewTextHandler(os.Stdout, nil)))
+	slog.SetDefault(logger)
 
 	serviceName := os.Getenv("OTEL_SERVICE_NAME")
 	if serviceName == "" {
@@ -89,26 +74,6 @@ func main() {
 		},
 	})
 
-	// cfg := &telemetry.Config{
-	// 	ServiceName:  serviceName,
-	// 	OtelEndpoint: otelEndpoint,
-	// }
-	//
-	// ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
-	// 	os.Exit(1)
-	// }
-
-	var lc net.ListenConfig
-	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
-	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create tcp listener: %s\n", err.Error())
-		os.Exit(1)
-	}
-
-	fmt.Fprintf(os.Stdout, "listening on ws://%v\n", listener.Addr())
-
 	brokerStr := os.Getenv("BROKERS")
 	if brokerStr == "" {
 		fmt.Fprint(os.Stdout, "found empty string for BROKERS\n")
@@ -127,44 +92,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
-
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewFranzAdapter(ctx, secondary.WithFranzProducer(strings.Split(brokerStr, ","), rpUser, rpPass))
+	kafka, err := secondary.NewFranzAdapter(ctx, logger, secondary.WithFranzConsumer(strings.Split(brokerStr, ","), rpUser, rpPass))
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
 		os.Exit(1)
 	}
+	defer kafka.CloseConsumer()
 
-	// kafka, err = secondary.NewSaramaAdapter(ctx, strings.Split(brokerStr, ","), secondary.WithRedPandaProducer(rpUser, rpPass))
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
-	// 	os.Exit(1)
-	// }
-	// defer kafka.CloseProducer()
-
-	pool := server.NewPool(ctx)
-	ngin := engine.NewGameEngine(ctx, pool, kafka)
-
-	epoll, err := server.NewEpoll(ctx, pool)
-	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create epoll: %s\n", err.Error())
-		os.Exit(1)
-	}
-
-	server := server.NewGameServer(ctx, listener, epoll, ngin, pool)
-
-	fmt.Fprint(os.Stdout, "starting server...\n")
-
-	go server.Start(ctx)
+	go kafka.ConsumeUserEvent(ctx)
 
 	select {
 	case <-ctx.Done():
 		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 	}
-
-	// ctx, timeout := context.WithTimeout(ctx, time.Second*10)
-	// defer timeout()
-	//
-	// go cleanup(ctx)
 }

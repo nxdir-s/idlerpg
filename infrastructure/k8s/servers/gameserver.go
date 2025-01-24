@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	WebServerImage string = "idlerpg/webserver:latest"
+	GameServerImage string = "idlerpg/gameserver:latest"
 
-	WebServerPort     int = 8080
-	WebServerReplicas int = 1
+	ServerPort     int = 3000
+	ServerReplicas int = 1
 )
 
-type WebServerProps struct {
+type GameServerProps struct {
 	Namespace     k8s.KubeNamespace
 	Image         *string
 	Replicas      *float64
@@ -21,28 +21,28 @@ type WebServerProps struct {
 	ContainerPort *float64
 }
 
-func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps) constructs.Construct {
+func NewGameServer(scope constructs.Construct, id *string, props *GameServerProps) constructs.Construct {
 	server := constructs.NewConstruct(scope, id)
 
 	replicas := props.Replicas
 	if replicas == nil {
-		replicas = jsii.Number(WebServerReplicas)
+		replicas = jsii.Number(ServerReplicas)
 	}
 
 	port := props.Port
 	if port == nil {
-		port = jsii.Number(WebServerPort)
+		port = jsii.Number(ServerPort)
 	}
 
 	containerPort := props.ContainerPort
 	if containerPort == nil {
-		containerPort = jsii.Number(WebServerPort)
+		containerPort = jsii.Number(ServerPort)
 	}
 
 	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 	labels := map[string]*string{"name": id}
 
-	configMap := NewWSConfig(server, jsii.String(*id+"-cm"), &WSConfigProps{
+	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), &GSConfigProps{
 		Namespace: props.Namespace,
 	})
 
@@ -99,7 +99,7 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 					RestartPolicy:      jsii.String("Always"),
 					Containers: &[]*k8s.Container{
 						{
-							Image:           jsii.String(WebServerImage),
+							Image:           jsii.String(GameServerImage),
 							ImagePullPolicy: jsii.String("Always"),
 							Name:            id,
 							Ports: &[]*k8s.ContainerPort{
@@ -127,12 +127,12 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 							},
 							Resources: &k8s.ResourceRequirements{
 								Requests: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("50m")),
-									"memory": k8s.Quantity_FromString(jsii.String("16Mi")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("250m")),
+									"memory": k8s.Quantity_FromString(jsii.String("64Mi")),
 								},
 								// Limits: &map[string]k8s.Quantity{
-								// 	"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
-								// 	"memory": k8s.Quantity_FromString(jsii.String("64Mi")),
+								// 	"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
+								// 	"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
 								// },
 							},
 						},
@@ -148,11 +148,11 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 	return server
 }
 
-type WSConfigProps struct {
+type GSConfigProps struct {
 	Namespace k8s.KubeNamespace
 }
 
-func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k8s.KubeConfigMap {
+func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
 		Metadata: &k8s.ObjectMeta{
 			Name:      id,
@@ -160,10 +160,14 @@ func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k
 		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
+			// "BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
+			"BROKERS":                            jsii.String(""),
+			"REDPANDA_SASL_USERNAME":             jsii.String(""),
+			"REDPANDA_SASL_PASSWORD":             jsii.String(""),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
-			"OTEL_SERVICE_NAME":                  jsii.String("webserver"),
+			"OTEL_SERVICE_NAME":                  jsii.String("gameserver"),
 			"PROFILE_URL":                        jsii.String(""),
 			"GCLOUD_USER":                        jsii.String(""),
 			"GCLOUD_PASSWORD":                    jsii.String(""),

@@ -7,45 +7,43 @@ import (
 )
 
 const (
-	GameServerImage string = "idlerpg/gameserver:latest"
-
-	ServerPort     int = 3000
-	ServerReplicas int = 1
+	ConsumerImage    string = "idlerpg/consumer:latest"
+	ConsumerPort     int    = 5000
+	ConsumerReplicas int    = 1
 )
 
-type GameServerProps struct {
+type ConsumerProps struct {
+	Namespace     k8s.KubeNamespace
 	Image         *string
 	Replicas      *float64
 	Port          *float64
 	ContainerPort *float64
 }
 
-func NewGameServer(scope constructs.Construct, id *string, props *GameServerProps) constructs.Construct {
+func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) constructs.Construct {
 	server := constructs.NewConstruct(scope, id)
 
 	replicas := props.Replicas
 	if replicas == nil {
-		replicas = jsii.Number(ServerReplicas)
+		replicas = jsii.Number(ConsumerReplicas)
 	}
 
 	port := props.Port
 	if port == nil {
-		port = jsii.Number(ServerPort)
-	}
-
-	containerPort := props.ContainerPort
-	if containerPort == nil {
-		containerPort = jsii.Number(ServerPort)
+		port = jsii.Number(ConsumerPort)
 	}
 
 	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 	labels := map[string]*string{"name": id}
 
-	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), nil)
+	configMap := NewConsumerCfg(server, jsii.String(*id+"-cm"), &ConsumerCfgProps{
+		Namespace: props.Namespace,
+	})
 
 	service := k8s.NewKubeService(server, jsii.String(*id+"-srv"), &k8s.KubeServiceProps{
 		Metadata: &k8s.ObjectMeta{
-			Name: id,
+			Name:      id,
+			Namespace: props.Namespace.Name(),
 		},
 		Spec: &k8s.ServiceSpec{
 			Type:     jsii.String("LoadBalancer"),
@@ -54,7 +52,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 				{
 					Protocol:   jsii.String("TCP"),
 					Port:       port,
-					TargetPort: k8s.IntOrString_FromNumber(containerPort),
+					TargetPort: k8s.IntOrString_FromNumber(port),
 				},
 			},
 		},
@@ -62,8 +60,9 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 
 	deployment := k8s.NewKubeStatefulSet(server, id, &k8s.KubeStatefulSetProps{
 		Metadata: &k8s.ObjectMeta{
-			Labels: &labels,
-			Name:   id,
+			Labels:    &labels,
+			Name:      id,
+			Namespace: props.Namespace.Name(),
 		},
 		Spec: &k8s.StatefulSetSpec{
 			MinReadySeconds: jsii.Number(3),
@@ -84,6 +83,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 						"name":                  labels["name"],
 						"network/kafka-network": jsii.String("true"),
 					},
+					Namespace: props.Namespace.Name(),
 				},
 				Spec: &k8s.PodSpec{
 					SecurityContext: &k8s.PodSecurityContext{
@@ -93,7 +93,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 					RestartPolicy:      jsii.String("Always"),
 					Containers: &[]*k8s.Container{
 						{
-							Image:           jsii.String(GameServerImage),
+							Image:           jsii.String(ConsumerImage),
 							ImagePullPolicy: jsii.String("Always"),
 							Name:            id,
 							Ports: &[]*k8s.ContainerPort{
@@ -121,13 +121,13 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 							},
 							Resources: &k8s.ResourceRequirements{
 								Requests: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("1000m")),
-									"memory": k8s.Quantity_FromString(jsii.String("1Gi")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
+									"memory": k8s.Quantity_FromString(jsii.String("16Mi")),
 								},
-								Limits: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("2000m")),
-									"memory": k8s.Quantity_FromString(jsii.String("2Gi")),
-								},
+								// Limits: &map[string]k8s.Quantity{
+								// 	"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
+								// 	"memory": k8s.Quantity_FromString(jsii.String("64Mi")),
+								// },
 							},
 						},
 					},
@@ -137,27 +137,33 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 	})
 
 	deployment.AddDependency(service)
+	deployment.AddDependency(props.Namespace)
 
 	return server
 }
 
-type GSConfigProps struct{}
+type ConsumerCfgProps struct {
+	Namespace k8s.KubeNamespace
+}
 
-func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k8s.KubeConfigMap {
+func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
 		Metadata: &k8s.ObjectMeta{
-			Name: id,
+			Name:      id,
+			Namespace: props.Namespace.Name(),
 		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
-			// "BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
 			"BROKERS":                            jsii.String(""),
-			"REDPANDA_SASL_USERNAME":             jsii.String("grafanaopsuser"),
-			"REDPANDA_SASL_PASSWORD":             jsii.String("password"),
-			"OTEL_COLLECTOR_HOST":                jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local"),
-			"OTEL_COLLECTOR_PORT":                jsii.String("4317"),
+			"REDPANDA_SASL_USERNAME":             jsii.String(""),
+			"REDPANDA_SASL_PASSWORD":             jsii.String(""),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
+			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
+			"OTEL_SERVICE_NAME":                  jsii.String("webserver"),
+			"PROFILE_URL":                        jsii.String(""),
+			"GCLOUD_USER":                        jsii.String(""),
+			"GCLOUD_PASSWORD":                    jsii.String(""),
 		},
 	})
 }

@@ -3,7 +3,7 @@ gameserver
 webserver
 main
 
-*dist/idlerpg.k8s.yaml*
+infrastructure/k8s/dist
 
 /tmp
 

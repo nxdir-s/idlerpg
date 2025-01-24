@@ -3,10 +3,9 @@ package secondary
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
+	"log/slog"
 
-	"github.com/google/uuid"
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
@@ -15,12 +14,14 @@ import (
 
 type FranzAdapterOpt func(a *FranzAdapter) error
 
-func WithFranzConsumer(brokers []string, username string, pass string) FranzAdapterOpt {
+func WithFranzConsumer(groupname string, brokers []string, username string, pass string) FranzAdapterOpt {
 	return func(a *FranzAdapter) error {
 		client, err := kgo.NewClient(
 			kgo.SeedBrokers(brokers...),
 			kgo.DialTLSConfig(&tls.Config{}),
 			kgo.SASL(scram.Auth{User: username, Pass: pass}.AsSha256Mechanism()),
+			kgo.ConsumerGroup(groupname),
+			kgo.ConsumeTopics(a.topic),
 		)
 		if err != nil {
 			return err
@@ -38,9 +39,6 @@ func WithFranzProducer(brokers []string, username string, pass string) FranzAdap
 			kgo.SeedBrokers(brokers...),
 			kgo.DialTLSConfig(&tls.Config{}),
 			kgo.SASL(scram.Auth{User: username, Pass: pass}.AsSha256Mechanism()),
-			kgo.ConsumerGroup(uuid.New().String()),
-			kgo.ConsumeTopics(a.topic),
-			kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		)
 		if err != nil {
 			return err
@@ -56,11 +54,13 @@ type FranzAdapter struct {
 	producer *kgo.Client
 	consumer *kgo.Client
 	topic    string
+	logger   *slog.Logger
 }
 
-func NewFranzAdapter(ctx context.Context, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
+func NewFranzAdapter(ctx context.Context, logger *slog.Logger, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
 	adapter := &FranzAdapter{
-		topic: "player-events",
+		topic:  "player-events",
+		logger: logger,
 	}
 
 	for _, opt := range opts {
@@ -97,11 +97,6 @@ func (a *FranzAdapter) CloseProducer() error {
 	return nil
 }
 
-type Message struct {
-	User    string `json:"user"`
-	Message string `json:"message"`
-}
-
 func (a *FranzAdapter) ConsumeUserEvent(ctx context.Context) {
 	if a.consumer == nil {
 		return
@@ -118,14 +113,27 @@ func (a *FranzAdapter) ConsumeUserEvent(ctx context.Context) {
 			for !iter.Done() {
 				record := iter.Next()
 
-				var msg Message
-				if err := json.Unmarshal(record.Value, &msg); err != nil {
+				var msg protobuf.UserEvent
+				if err := proto.Unmarshal(record.Value, &msg); err != nil {
 					fmt.Printf("error decoding message: %v\n", err)
 					continue
 				}
 
-				fmt.Printf("%s: %s\n", msg.User, msg.Message)
+				a.logger.Info("consumed message",
+					slog.String("action", msg.Action.String()),
+					slog.Int("exp", int(msg.Exp)),
+				)
 			}
 		}
 	}
+}
+
+func (a *FranzAdapter) CloseConsumer() error {
+	if a.consumer == nil {
+		return nil
+	}
+
+	a.consumer.Close()
+
+	return nil
 }
