@@ -57,6 +57,10 @@ func (s *UserService) GetUserID(ctx context.Context, email string) (int, error) 
 	return s.db.GetUserID(ctx, email)
 }
 
-func (s *UserService) UserExists(ctx context.Context, email string) (bool, error) {
+func (s *UserService) EmailExists(ctx context.Context, email string) (bool, error) {
 	return s.db.EmailExists(ctx, email)
+}
+
+func (s *UserService) CreateUser(ctx context.Context, email string) (int, error) {
+	return s.db.CreateUser(ctx, email)
 }

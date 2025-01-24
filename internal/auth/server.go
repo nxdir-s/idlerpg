@@ -46,8 +46,8 @@ func NewServer(ctx context.Context, adapter ports.AuthPort) (*Server, error) {
 		google: googleConfig(),
 	}
 
-	s.mux.HandleFunc("GET /auth/google/login", httpHandler(s.googleLogin))
-	s.mux.HandleFunc("GET /auth/google/callback", httpHandler(s.googleCallback))
+	s.mux.HandleFunc("GET /auth/google/login", enableCORS(httpHandler(s.googleLogin)))
+	s.mux.HandleFunc("GET /auth/google/callback", enableCORS(httpHandler(s.googleCallback)))
 
 	return s, nil
 }

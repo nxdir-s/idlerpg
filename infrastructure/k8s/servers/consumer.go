@@ -7,13 +7,12 @@ import (
 )
 
 const (
-	WebServerImage string = "idlerpg/webserver:latest"
-
-	WebServerPort     int = 8080
-	WebServerReplicas int = 1
+	ConsumerImage    string = "idlerpg/consumer:latest"
+	ConsumerPort     int    = 5000
+	ConsumerReplicas int    = 1
 )
 
-type WebServerProps struct {
+type ConsumerProps struct {
 	Namespace     k8s.KubeNamespace
 	Image         *string
 	Replicas      *float64
@@ -21,28 +20,23 @@ type WebServerProps struct {
 	ContainerPort *float64
 }
 
-func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps) constructs.Construct {
+func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) constructs.Construct {
 	server := constructs.NewConstruct(scope, id)
 
 	replicas := props.Replicas
 	if replicas == nil {
-		replicas = jsii.Number(WebServerReplicas)
+		replicas = jsii.Number(ConsumerReplicas)
 	}
 
 	port := props.Port
 	if port == nil {
-		port = jsii.Number(WebServerPort)
-	}
-
-	containerPort := props.ContainerPort
-	if containerPort == nil {
-		containerPort = jsii.Number(WebServerPort)
+		port = jsii.Number(ConsumerPort)
 	}
 
 	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 	labels := map[string]*string{"name": id}
 
-	configMap := NewWSConfig(server, jsii.String(*id+"-cm"), &WSConfigProps{
+	configMap := NewConsumerCfg(server, jsii.String(*id+"-cm"), &ConsumerCfgProps{
 		Namespace: props.Namespace,
 	})
 
@@ -58,7 +52,7 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 				{
 					Protocol:   jsii.String("TCP"),
 					Port:       port,
-					TargetPort: k8s.IntOrString_FromNumber(containerPort),
+					TargetPort: k8s.IntOrString_FromNumber(port),
 				},
 			},
 		},
@@ -99,7 +93,7 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 					RestartPolicy:      jsii.String("Always"),
 					Containers: &[]*k8s.Container{
 						{
-							Image:           jsii.String(WebServerImage),
+							Image:           jsii.String(ConsumerImage),
 							ImagePullPolicy: jsii.String("Always"),
 							Name:            id,
 							Ports: &[]*k8s.ContainerPort{
@@ -127,7 +121,7 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 							},
 							Resources: &k8s.ResourceRequirements{
 								Requests: &map[string]k8s.Quantity{
-									"cpu":    k8s.Quantity_FromString(jsii.String("50m")),
+									"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
 									"memory": k8s.Quantity_FromString(jsii.String("16Mi")),
 								},
 								// Limits: &map[string]k8s.Quantity{
@@ -148,11 +142,11 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 	return server
 }
 
-type WSConfigProps struct {
+type ConsumerCfgProps struct {
 	Namespace k8s.KubeNamespace
 }
 
-func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k8s.KubeConfigMap {
+func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
 		Metadata: &k8s.ObjectMeta{
 			Name:      id,
@@ -160,6 +154,9 @@ func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k
 		},
 		Immutable: jsii.Bool(true),
 		Data: &map[string]*string{
+			"BROKERS":                            jsii.String(""),
+			"REDPANDA_SASL_USERNAME":             jsii.String(""),
+			"REDPANDA_SASL_PASSWORD":             jsii.String(""),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
