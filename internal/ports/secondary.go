@@ -9,7 +9,7 @@ import (
 type KafkaPort interface {
 	SendUserEvent(ctx context.Context, event *protobuf.UserEvent) error
 	CloseProducer() error
-	ConsumeUserEvent(ctx context.Context)
+	ConsumeUserEvents(ctx context.Context)
 	CloseConsumer() error
 }
 

@@ -21,7 +21,8 @@ func NewEventsConsumer(kafka ports.KafkaPort, logger *slog.Logger) *EventsConsum
 
 func (c *EventsConsumer) Start(ctx context.Context) {
 	c.logger.Info("starting events consumer")
-	c.kafka.ConsumeUserEvent(ctx)
+
+	c.kafka.ConsumeUserEvents(ctx)
 }
 
 func (c *EventsConsumer) Close() {
