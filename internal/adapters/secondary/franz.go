@@ -21,6 +21,9 @@ func WithFranzConsumer(groupname string, brokers []string, username string, pass
 			kgo.SASL(scram.Auth{User: username, Pass: pass}.AsSha256Mechanism()),
 			kgo.ConsumerGroup(groupname),
 			kgo.ConsumeTopics(a.topic),
+			kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+			kgo.DisableAutoCommit(),
+			kgo.BlockRebalanceOnPoll(),
 		)
 		if err != nil {
 			return err
@@ -56,9 +59,9 @@ type FranzAdapter struct {
 	logger   *slog.Logger
 }
 
-func NewFranzAdapter(ctx context.Context, logger *slog.Logger, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
+func NewFranzAdapter(ctx context.Context, topic string, logger *slog.Logger, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
 	adapter := &FranzAdapter{
-		topic:  "player-events",
+		topic:  topic,
 		logger: logger,
 	}
 
@@ -96,7 +99,7 @@ func (a *FranzAdapter) CloseProducer() error {
 	return nil
 }
 
-func (a *FranzAdapter) ConsumeUserEvent(ctx context.Context) {
+func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 	if a.consumer == nil {
 		return
 	}
@@ -134,6 +137,17 @@ func (a *FranzAdapter) ConsumeUserEvent(ctx context.Context) {
 					slog.Int("exp", int(msg.Exp)),
 				)
 			}
+
+			if err := a.consumer.CommitUncommittedOffsets(ctx); err != nil {
+				if err == context.Canceled {
+					a.logger.Info("received interrupt", slog.Any("err", err))
+					return
+				}
+
+				a.logger.Error("unable to commit offsets", slog.Any("err", err))
+			}
+
+			a.consumer.AllowRebalance()
 		}
 	}
 }
@@ -147,4 +161,3 @@ func (a *FranzAdapter) CloseConsumer() error {
 
 	return nil
 }
-

@@ -55,7 +55,7 @@ func main() {
 	runtime.SetMutexProfileFraction(5)
 	runtime.SetBlockProfileRate(5)
 
-	pyroscope.Start(pyroscope.Config{
+	profileCfg := pyroscope.Config{
 		ApplicationName:   serviceName,
 		ServerAddress:     profileUrl,
 		BasicAuthUser:     gcUser,
@@ -72,7 +72,14 @@ func main() {
 			pyroscope.ProfileBlockCount,
 			pyroscope.ProfileBlockDuration,
 		},
-	})
+	}
+
+	profiler, err := pyroscope.Start(profileCfg)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "failed to start profiler: %+v\n", err)
+		os.Exit(1)
+	}
+	defer profiler.Stop()
 
 	// cfg := &telemetry.Config{
 	// 	ServiceName:  serviceName,
