@@ -128,6 +128,6 @@ func (ngin *GameEngine) buildEvent(t time.Time) *valobj.Event {
 			Type: 1,
 			Body: "server tick: " + t.UTC().String(),
 		},
-		Consumed: make(chan bool),
+		Consumed: make(chan struct{}),
 	}
 }

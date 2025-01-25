@@ -109,7 +109,7 @@ func (p *Pool) Start(ctx context.Context) {
 				}
 			}
 
-			event.Consumed <- true
+			event.Consumed <- struct{}{}
 		}
 	}
 }
