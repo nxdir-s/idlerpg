@@ -38,6 +38,17 @@ func (e *FSError) Error() string {
 	return "error creating file system rooted at " + e.dir + ": " + e.err.Error()
 }
 
+type ServerHandler func(http.ResponseWriter, *http.Request) error
+
+func httpHandler(fn ServerHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := fn(w, r); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 type Server struct {
 	mux  http.ServeMux
 	html *template.Template
