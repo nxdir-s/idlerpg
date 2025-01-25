@@ -11,6 +11,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	MaxPollFetches int = 1000
+)
+
 type FranzAdapterOpt func(a *FranzAdapter) error
 
 func WithFranzConsumer(groupname string, brokers []string, username string, pass string) FranzAdapterOpt {
@@ -109,7 +113,7 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			fetches := a.consumer.PollFetches(ctx)
+			fetches := a.consumer.PollRecords(ctx, MaxPollFetches)
 
 			if errors := fetches.Errors(); len(errors) > 0 {
 				for _, e := range errors {

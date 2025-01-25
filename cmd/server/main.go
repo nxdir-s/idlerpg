@@ -17,6 +17,7 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/server"
+	"github.com/nxdir-s/telemetry"
 )
 
 const (
@@ -72,6 +73,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := &telemetry.Config{
+		ServiceName:        serviceName,
+		OtelEndpoint:       otelEndpoint,
+		Insecure:           true,
+		EnableSpanProfiles: true,
+	}
+
+	ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
+		os.Exit(1)
+	}
+	defer cleanup(ctx)
+
 	runtime.SetMutexProfileFraction(5)
 	runtime.SetBlockProfileRate(5)
 
@@ -101,17 +116,6 @@ func main() {
 	}
 	defer profiler.Stop()
 
-	// cfg := &telemetry.Config{
-	// 	ServiceName:  serviceName,
-	// 	OtelEndpoint: otelEndpoint,
-	// }
-	//
-	// ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
-	// 	os.Exit(1)
-	// }
-
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
@@ -127,6 +131,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
+
 	rpUser := os.Getenv("REDPANDA_SASL_USERNAME")
 	if rpUser == "" {
 		fmt.Fprint(os.Stdout, "found empty string for REDPANDA_SASL_USERNAME\n")
@@ -138,8 +144,6 @@ func main() {
 		fmt.Fprint(os.Stdout, "found empty string for REDPANDA_SASL_PASSWORD\n")
 		os.Exit(1)
 	}
-
-	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
 
 	var kafka ports.KafkaPort
 	kafka, err = secondary.NewFranzAdapter(ctx, "user-events", logger, secondary.WithFranzProducer(strings.Split(brokerStr, ","), rpUser, rpPass))
@@ -168,9 +172,4 @@ func main() {
 	case <-ctx.Done():
 		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
 	}
-
-	// ctx, timeout := context.WithTimeout(ctx, time.Second*10)
-	// defer timeout()
-	//
-	// go cleanup(ctx)
 }
