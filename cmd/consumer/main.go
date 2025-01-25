@@ -14,6 +14,7 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/consumers"
 	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/ports"
+	"github.com/nxdir-s/telemetry"
 )
 
 func main() {
@@ -52,6 +53,20 @@ func main() {
 		fmt.Fprint(os.Stdout, "missing env var: GCLOUD_PASSWORD\n")
 		os.Exit(1)
 	}
+
+	cfg := &telemetry.Config{
+		ServiceName:        serviceName,
+		OtelEndpoint:       otelEndpoint,
+		Insecure:           true,
+		EnableSpanProfiles: true,
+	}
+
+	ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
+		os.Exit(1)
+	}
+	defer cleanup(ctx)
 
 	runtime.SetMutexProfileFraction(5)
 	runtime.SetBlockProfileRate(5)

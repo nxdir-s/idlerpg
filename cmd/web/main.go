@@ -12,6 +12,7 @@ import (
 
 	"github.com/grafana/pyroscope-go"
 	"github.com/nxdir-s/idlerpg/web"
+	"github.com/nxdir-s/telemetry"
 )
 
 const (
@@ -52,6 +53,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := &telemetry.Config{
+		ServiceName:        serviceName,
+		OtelEndpoint:       otelEndpoint,
+		Insecure:           true,
+		EnableSpanProfiles: true,
+	}
+
+	ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
+		os.Exit(1)
+	}
+	defer cleanup(ctx)
+
 	runtime.SetMutexProfileFraction(5)
 	runtime.SetBlockProfileRate(5)
 
@@ -80,17 +95,6 @@ func main() {
 		os.Exit(1)
 	}
 	defer profiler.Stop()
-
-	// cfg := &telemetry.Config{
-	// 	ServiceName:  serviceName,
-	// 	OtelEndpoint: otelEndpoint,
-	// }
-	//
-	// ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
-	// 	os.Exit(1)
-	// }
 
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
@@ -133,8 +137,6 @@ func main() {
 
 	ctx, timeout := context.WithTimeout(ctx, time.Second*10)
 	defer timeout()
-
-	// go cleanup(ctx)
 
 	if err := server.Shutdown(ctx); err != nil {
 		fmt.Fprintf(os.Stdout, "failed to shutdown server: %s\n", err.Error())
