@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/grafana/pyroscope-go"
+	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/web"
 	"github.com/nxdir-s/telemetry"
 )
@@ -23,33 +25,36 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
+	logger := slog.New(logs.NewHandler(slog.NewTextHandler(os.Stdout, nil)))
+	slog.SetDefault(logger)
+
 	serviceName := os.Getenv("OTEL_SERVICE_NAME")
 	if serviceName == "" {
-		fmt.Fprint(os.Stdout, "missing env var: OTEL_SERVICE_NAME\n")
+		logger.Error("missing env var: OTEL_SERVICE_NAME")
 		os.Exit(1)
 	}
 
 	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if otelEndpoint == "" {
-		fmt.Fprint(os.Stdout, "missing env var: OTEL_EXPORTER_OTLP_ENDPOINT\n")
+		logger.Error("missing env var: OTEL_EXPORTER_OTLP_ENDPOINT")
 		os.Exit(1)
 	}
 
 	profileUrl := os.Getenv("PROFILE_URL")
 	if profileUrl == "" {
-		fmt.Fprint(os.Stdout, "missing env var: PROFILE_URL\n")
+		logger.Error("missing env var: PROFILE_URL")
 		os.Exit(1)
 	}
 
 	gcUser := os.Getenv("GCLOUD_USER")
 	if gcUser == "" {
-		fmt.Fprint(os.Stdout, "missing env var: GCLOUD_USER\n")
+		logger.Error("missing env var: GCLOUD_USER")
 		os.Exit(1)
 	}
 
 	gcPass := os.Getenv("GCLOUD_PASSWORD")
 	if gcUser == "" {
-		fmt.Fprint(os.Stdout, "missing env var: GCLOUD_PASSWORD\n")
+		logger.Error("missing env var: GCLOUD_PASSWORD")
 		os.Exit(1)
 	}
 
@@ -62,7 +67,7 @@ func main() {
 
 	ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
+		logger.Error("failed to initialize telemetry", slog.Any("err", err))
 		os.Exit(1)
 	}
 	defer cleanup(ctx)
@@ -91,7 +96,7 @@ func main() {
 
 	profiler, err := pyroscope.Start(profileCfg)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to start profiler: %+v\n", err)
+		logger.Error("failed to start profiler", slog.Any("err", err))
 		os.Exit(1)
 	}
 	defer profiler.Stop()
@@ -99,15 +104,15 @@ func main() {
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create tcp listener: %s\n", err.Error())
+		logger.Error("failed to create tcp listener", slog.Any("err", err))
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stdout, "listening on %v\n", listener.Addr())
+	logger.Info(fmt.Sprintf("listening on %v", listener.Addr()))
 
 	ws, err := web.NewServer(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create web server: %s\n", err.Error())
+		logger.Error("failed to create web server", slog.Any("err", err))
 		os.Exit(1)
 	}
 
@@ -122,16 +127,16 @@ func main() {
 
 	errChan := make(chan error, 1)
 	go func() {
-		fmt.Fprint(os.Stdout, "starting server...\n")
+		logger.Info("starting server")
 		errChan <- server.Serve(listener)
 	}()
 
 	select {
 	case <-ctx.Done():
-		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+		logger.Info(ctx.Err().Error())
 	case err := <-errChan:
 		if err != nil {
-			fmt.Fprintf(os.Stdout, "failed to serve: %s\n", err.Error())
+			logger.Error("failed to serve", slog.Any("err", err))
 		}
 	}
 
@@ -139,7 +144,7 @@ func main() {
 	defer timeout()
 
 	if err := server.Shutdown(ctx); err != nil {
-		fmt.Fprintf(os.Stdout, "failed to shutdown server: %s\n", err.Error())
+		logger.Error("failed to shutdown server", slog.Any("err", err))
 		os.Exit(1)
 	}
 }
