@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const (
@@ -69,13 +71,13 @@ func NewServer(ctx context.Context) (*Server, error) {
 
 	s.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
-	s.mux.HandleFunc("/", httpHandler(s.handleIndex))
-	s.mux.HandleFunc("/dashboard", httpHandler(s.handleDashboard))
-	s.mux.HandleFunc("/tables", httpHandler(s.handleTables))
-	s.mux.HandleFunc("/billing", httpHandler(s.handleBilling))
-	s.mux.HandleFunc("/profile", httpHandler(s.handleProfile))
-	s.mux.HandleFunc("/login", httpHandler(s.handleLogin))
-	s.mux.HandleFunc("/registration", httpHandler(s.handleRegistration))
+	s.mux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleIndex)), "index"))
+	s.mux.Handle("/dashboard", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleDashboard)), "dashboard"))
+	s.mux.Handle("/tables", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleTables)), "tables"))
+	s.mux.Handle("/billing", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleBilling)), "billing"))
+	s.mux.Handle("/profile", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleProfile)), "profile"))
+	s.mux.Handle("/login", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleLogin)), "login"))
+	s.mux.Handle("/registration", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleRegistration)), "registration"))
 
 	return s, nil
 }

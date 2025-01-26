@@ -20,7 +20,7 @@ type Client struct {
 	User *entity.User
 }
 
-func (c *Client) SendMessage(ctx context.Context, msg *valobj.Message) error {
+func (c *Client) SendMessage(ctx context.Context, msg valobj.Message) error {
 	wr := wsutil.NewWriter(c.Conn, ws.StateServerSide, ws.OpText)
 
 	if err := json.NewEncoder(wr).Encode(msg); err != nil {

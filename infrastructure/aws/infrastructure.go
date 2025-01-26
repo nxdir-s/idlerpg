@@ -8,7 +8,7 @@ import (
 	elb "github.com/aws/aws-cdk-go/awscdk/v2/awselasticloadbalancingv2"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
-	"github.com/nxdir-s/idlerpg/infrastructure/stacks"
+	"github.com/nxdir-s/idlerpg/infrastructure/aws/stacks"
 )
 
 const (

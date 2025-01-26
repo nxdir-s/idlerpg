@@ -11,5 +11,9 @@ type User struct {
 }
 
 func NewUser() *User {
-	return &User{}
+	return &User{
+		State: users.GameState{
+			Action: users.Fight,
+		},
+	}
 }

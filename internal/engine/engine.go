@@ -2,7 +2,7 @@ package engine
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"math/rand"
 	"os"
 	"time"
@@ -10,9 +10,9 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/server"
-	"github.com/nxdir-s/idlerpg/internal/util"
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/nxdir-s/pipelines"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -30,15 +30,19 @@ type GameEngine struct {
 	ticker   *time.Ticker
 	sigusr1  chan os.Signal
 	isPaused bool
+	tracer   trace.Tracer
+	logger   *slog.Logger
 }
 
 // NewGameEngine creates a GameEngine
-func NewGameEngine(ctx context.Context, pool *server.Pool, kafka ports.KafkaPort) *GameEngine {
+func NewGameEngine(pool *server.Pool, kafka ports.KafkaPort, logger *slog.Logger, tracer trace.Tracer) *GameEngine {
 	return &GameEngine{
 		kafka:   kafka,
 		pool:    pool,
 		ticker:  time.NewTicker(TickerInterval),
 		sigusr1: make(chan os.Signal, 1),
+		tracer:  tracer,
+		logger:  logger,
 	}
 }
 
@@ -53,18 +57,18 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 
 			switch ngin.isPaused {
 			case true:
-				fmt.Fprint(os.Stdout, "server is paused...\n")
+				ngin.logger.Info("server is paused")
 			case false:
-				fmt.Fprint(os.Stdout, "server is resumed...\n")
+				ngin.logger.Info("server is resumed")
 			}
 		case t := <-ngin.ticker.C:
 			if ngin.isPaused {
 				break
 			}
 
-			time := util.Timer("Server Tick")
+			ctx, span := ngin.tracer.Start(ctx, "server-tick")
 
-			fmt.Fprintf(os.Stdout, "server tick: %s\n", t.UTC().String())
+			ngin.logger.Info("server tick")
 
 			reply := make(chan *server.Snapshot)
 			ngin.pool.Snapshot <- reply
@@ -74,22 +78,26 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 			ngin.process(ctx, snapshot.Connections)
 			snapshot.Processed <- struct{}{}
 
-			event := ngin.buildEvent(t)
+			event := ngin.buildEvent(ctx, t)
 
 			ngin.pool.Broadcast <- event
 			<-event.Consumed
-			time()
+
+			span.End()
 		}
 	}
 }
 
 func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Client) {
 	if len(users) == 0 {
-		fmt.Fprint(os.Stdout, "0 users connected...\n")
+		ngin.logger.Info("0 users connected")
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "processings %d user actions...\n", len(users))
+	ctx, span := ngin.tracer.Start(ctx, "processing")
+	defer span.End()
+
+	ngin.logger.Info("processing user actions", slog.Int("connections", len(users)))
 
 	stream := pipelines.StreamMap[int32, *server.Client](ctx, users)
 
@@ -102,12 +110,12 @@ func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Cli
 	for err := range errChan {
 		select {
 		case <-ctx.Done():
-			fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+			ngin.logger.Error(ctx.Err().Error())
 			return
 		default:
 			if err != nil {
 				// TODO: figure out how to handle replays. Maybe dlq?
-				fmt.Fprintf(os.Stdout, "error sending user event: %s\n", err.Error())
+				ngin.logger.Error("failed to send user event", slog.Any("err", err))
 			}
 		}
 	}
@@ -122,11 +130,11 @@ func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *pr
 	}
 }
 
-func (ngin *GameEngine) buildEvent(t time.Time) *valobj.Event {
+func (ngin *GameEngine) buildEvent(ctx context.Context, t time.Time) *valobj.Event {
 	return &valobj.Event{
-		Body: &valobj.Message{
-			Type: 1,
-			Body: "server tick: " + t.UTC().String(),
+		Ctx: ctx,
+		Msg: valobj.Message{
+			Value: "server tick: " + t.UTC().String(),
 		},
 		Consumed: make(chan struct{}),
 	}

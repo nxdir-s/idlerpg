@@ -102,15 +102,6 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 							},
 							Env: &[]*k8s.EnvVar{
 								{
-									Name: jsii.String("POD_IP"),
-									ValueFrom: &k8s.EnvVarSource{
-										FieldRef: &k8s.ObjectFieldSelector{
-											ApiVersion: jsii.String("v1"),
-											FieldPath:  jsii.String("status.podIP"),
-										},
-									},
-								},
-								{
 									Name: jsii.String("BROKERS"),
 									ValueFrom: &k8s.EnvVarSource{
 										SecretKeyRef: &k8s.SecretKeySelector{
@@ -175,7 +166,7 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 							Resources: &k8s.ResourceRequirements{
 								Requests: &map[string]k8s.Quantity{
 									"cpu":    k8s.Quantity_FromString(jsii.String("100m")),
-									"memory": k8s.Quantity_FromString(jsii.String("16Mi")),
+									"memory": k8s.Quantity_FromString(jsii.String("32Mi")),
 								},
 							},
 						},
