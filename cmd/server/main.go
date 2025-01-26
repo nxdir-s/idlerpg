@@ -34,43 +34,43 @@ func main() {
 
 	var rLimit syscall.Rlimit
 	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		fmt.Fprintf(os.Stdout, "failed to get RLIMIT: %s\n", err.Error())
+		logger.Error("failed to get RLIMIT", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	rLimit.Cur = rLimit.Max
 	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		fmt.Fprintf(os.Stdout, "failed to set RLIMIT: %s\n", err.Error())
+		logger.Error("failed to set RLIMIT", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	serviceName := os.Getenv("OTEL_SERVICE_NAME")
 	if serviceName == "" {
-		fmt.Fprint(os.Stdout, "missing env var: OTEL_SERVICE_NAME\n")
+		logger.Error("missing env var: OTEL_SERVICE_NAME")
 		os.Exit(1)
 	}
 
 	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if otelEndpoint == "" {
-		fmt.Fprint(os.Stdout, "missing env var: OTEL_EXPORTER_OTLP_ENDPOINT\n")
+		logger.Error("missing env var: OTEL_EXPORTER_OTLP_ENDPOINT")
 		os.Exit(1)
 	}
 
 	profileUrl := os.Getenv("PROFILE_URL")
 	if profileUrl == "" {
-		fmt.Fprint(os.Stdout, "missing env var: PROFILE_URL\n")
+		logger.Error("missing env var: PROFILE_URL")
 		os.Exit(1)
 	}
 
 	gcUser := os.Getenv("GCLOUD_USER")
 	if gcUser == "" {
-		fmt.Fprint(os.Stdout, "missing env var: GCLOUD_USER\n")
+		logger.Error("missing env var: GCLOUD_USER")
 		os.Exit(1)
 	}
 
 	gcPass := os.Getenv("GCLOUD_PASSWORD")
 	if gcUser == "" {
-		fmt.Fprint(os.Stdout, "missing env var: GCLOUD_PASSWORD\n")
+		logger.Error("missing env var: GCLOUD_PASSWORD")
 		os.Exit(1)
 	}
 
@@ -83,14 +83,14 @@ func main() {
 
 	ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to initialize telemetry: %s\n", err.Error())
+		logger.Error("failed to initialize telemetry", slog.Any("err", err))
 		os.Exit(1)
 	}
 	defer cleanup(ctx)
 
 	tracer, err := util.GetTracer(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
@@ -118,7 +118,7 @@ func main() {
 
 	profiler, err := pyroscope.Start(profileCfg)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to start profiler: %+v\n", err)
+		logger.Error("failed to start profiler", slog.Any("err", err))
 		os.Exit(1)
 	}
 	defer profiler.Stop()
@@ -126,36 +126,36 @@ func main() {
 	var lc net.ListenConfig
 	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create tcp listener: %s\n", err.Error())
+		logger.Error("failed to create tcp listener", slog.Any("err", err))
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stdout, "listening on ws://%v\n", listener.Addr())
+	logger.Info(fmt.Sprintf("listening on ws://%v", listener.Addr()))
 
 	brokerStr := os.Getenv("BROKERS")
 	if brokerStr == "" {
-		fmt.Fprint(os.Stdout, "found empty string for BROKERS\n")
+		logger.Error("found empty string for BROKERS")
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stdout, "BROKERS: %s\n", brokerStr)
+	logger.Info("BROKERS: " + brokerStr)
 
 	rpUser := os.Getenv("REDPANDA_SASL_USERNAME")
 	if rpUser == "" {
-		fmt.Fprint(os.Stdout, "found empty string for REDPANDA_SASL_USERNAME\n")
+		logger.Error("found empty string for REDPANDA_SASL_USERNAME")
 		os.Exit(1)
 	}
 
 	rpPass := os.Getenv("REDPANDA_SASL_PASSWORD")
 	if rpPass == "" {
-		fmt.Fprint(os.Stdout, "found empty string for REDPANDA_SASL_PASSWORD\n")
+		logger.Error("found empty string for REDPANDA_SASL_PASSWORD")
 		os.Exit(1)
 	}
 
 	var kafka ports.KafkaPort
 	kafka, err = secondary.NewFranzAdapter(ctx, "user-events", logger, secondary.WithFranzProducer(strings.Split(brokerStr, ","), rpUser, rpPass))
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create kafka adapter: %s\n", err.Error())
+		logger.Error("failed to create kafka adapter", slog.Any("err", err))
 		os.Exit(1)
 	}
 	defer kafka.CloseProducer()
@@ -165,18 +165,18 @@ func main() {
 
 	epoll, err := server.NewEpoll(ctx, pool, tracer)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create epoll: %s\n", err.Error())
+		logger.Error("failed to create epoll", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	server := server.NewGameServer(ctx, listener, epoll, ngin, pool)
 
-	fmt.Fprint(os.Stdout, "starting server...\n")
+	logger.Info("starting server")
 
 	go server.Start(ctx)
 
 	select {
 	case <-ctx.Done():
-		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+		logger.Info(ctx.Err().Error())
 	}
 }
