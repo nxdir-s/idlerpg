@@ -3,10 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"github.com/nxdir-s/pipelines"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sys/unix"
 )
 
@@ -36,9 +38,11 @@ type Pool struct {
 	EpollEvents chan *EpollEvent
 
 	counter int32
+	tracer  trace.Tracer
+	logger  *slog.Logger
 }
 
-func NewPool(ctx context.Context) *Pool {
+func NewPool(ctx context.Context, tracer trace.Tracer) *Pool {
 	return &Pool{
 		Connections: make(map[int32]*Client),
 		Register:    make(chan *Client),
@@ -46,6 +50,7 @@ func NewPool(ctx context.Context) *Pool {
 		Broadcast:   make(chan *valobj.Event),
 		Snapshot:    make(chan chan *Snapshot),
 		EpollEvents: make(chan *EpollEvent),
+		tracer:      tracer,
 	}
 }
 
@@ -62,11 +67,13 @@ func (p *Pool) Start(ctx context.Context) {
 
 			p.Connections[client.Fd] = client
 
-			fmt.Fprintf(os.Stdout, "added client to pool, total number of connections: %d\n", len(p.Connections))
+			p.logger.Info("added client to pool", slog.Int("connections", len(p.Connections)))
 		case fd := <-p.Remove:
 			delete(p.Connections, fd)
-			fmt.Fprintf(os.Stdout, "removed client from pool, total number of connections: %d\n", len(p.Connections))
+			p.logger.Info("removed client from pool", slog.Int("connections", len(p.Connections)))
 		case event := <-p.EpollEvents:
+			_, span := p.tracer.Start(ctx, "epoll-events")
+
 			connections := make([]*Client, 0, len(event.Events))
 			for i := range event.Events {
 				conn, ok := p.Connections[event.Events[i].Fd]
@@ -78,7 +85,10 @@ func (p *Pool) Start(ctx context.Context) {
 			}
 
 			event.Resp <- connections
+			span.End()
 		case req := <-p.Snapshot:
+			_, span := p.tracer.Start(ctx, "snapshot")
+
 			s := &Snapshot{
 				Connections: p.Connections,
 				Processed:   make(chan struct{}),
@@ -86,11 +96,15 @@ func (p *Pool) Start(ctx context.Context) {
 
 			req <- s
 			<-s.Processed
+
+			span.End()
 		case event := <-p.Broadcast:
-			fmt.Fprintf(os.Stdout, "recieved event to broadcast: %s\n", event.Body.Body)
+			ctx, span := p.tracer.Start(event.Ctx, "broadcast")
+
+			p.logger.Info("recieved event to broadcast", slog.String("msg", event.Msg.Value))
 
 			sendMsg := func(ctx context.Context, client *Client) error {
-				return client.SendMessage(ctx, event.Body)
+				return client.SendMessage(ctx, event.Msg)
 			}
 
 			stream := pipelines.StreamMap[int32, *Client](ctx, p.Connections)
@@ -100,16 +114,17 @@ func (p *Pool) Start(ctx context.Context) {
 			for err := range errChan {
 				select {
 				case <-ctx.Done():
-					fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+					p.logger.Info("context cancelled", slog.Any("err", ctx.Err()))
 					return
 				default:
 					if err != nil {
-						fmt.Fprintf(os.Stdout, "failed to send message to client: %+v\n", err)
+						p.logger.Error("failed to send message to client", slog.Any("err", err))
 					}
 				}
 			}
 
 			event.Consumed <- struct{}{}
+			span.End()
 		}
 	}
 }

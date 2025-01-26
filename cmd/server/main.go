@@ -17,6 +17,7 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/server"
+	"github.com/nxdir-s/idlerpg/internal/util"
 	"github.com/nxdir-s/telemetry"
 )
 
@@ -87,6 +88,12 @@ func main() {
 	}
 	defer cleanup(ctx)
 
+	tracer, err := util.GetTracer(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		os.Exit(1)
+	}
+
 	runtime.SetMutexProfileFraction(5)
 	runtime.SetBlockProfileRate(5)
 
@@ -153,10 +160,10 @@ func main() {
 	}
 	defer kafka.CloseProducer()
 
-	pool := server.NewPool(ctx)
-	ngin := engine.NewGameEngine(ctx, pool, kafka)
+	pool := server.NewPool(ctx, tracer)
+	ngin := engine.NewGameEngine(pool, kafka, logger, tracer)
 
-	epoll, err := server.NewEpoll(ctx, pool)
+	epoll, err := server.NewEpoll(ctx, pool, tracer)
 	if err != nil {
 		fmt.Fprintf(os.Stdout, "failed to create epoll: %s\n", err.Error())
 		os.Exit(1)

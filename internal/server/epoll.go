@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/nxdir-s/idlerpg/internal/core/entity"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sys/unix"
 )
 
@@ -29,10 +30,12 @@ type Epoll struct {
 
 	Add    chan net.Conn
 	Remove chan *Client
+
+	tracer trace.Tracer
 }
 
 // NewEpoll creates an Epoll
-func NewEpoll(ctx context.Context, pool *Pool) (*Epoll, error) {
+func NewEpoll(ctx context.Context, pool *Pool, tracer trace.Tracer) (*Epoll, error) {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
 		return nil, &ErrEpoll{err}
@@ -43,6 +46,7 @@ func NewEpoll(ctx context.Context, pool *Pool) (*Epoll, error) {
 		pool:   pool,
 		Add:    make(chan net.Conn, ClientBuffer),
 		Remove: make(chan *Client, ClientBuffer),
+		tracer: tracer,
 	}, nil
 }
 
@@ -53,11 +57,11 @@ func (e *Epoll) Start(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case conn := <-e.Add:
-			if err := e.add(conn); err != nil {
+			if err := e.add(ctx, conn); err != nil {
 				fmt.Fprintf(os.Stdout, "failed to add connection: %+v\n", err)
 			}
 		case client := <-e.Remove:
-			if err := e.remove(client); err != nil {
+			if err := e.remove(ctx, client); err != nil {
 				fmt.Fprintf(os.Stdout, "failed to remove connection: %+v\n", err)
 			}
 		}
@@ -87,7 +91,10 @@ func (e *Epoll) Wait() ([]*Client, error) {
 	return <-event.Resp, nil
 }
 
-func (e *Epoll) add(conn net.Conn) error {
+func (e *Epoll) add(ctx context.Context, conn net.Conn) error {
+	ctx, span := e.tracer.Start(ctx, "epoll-add")
+	defer span.End()
+
 	fd, err := e.getFileDescriptor(conn)
 	if err != nil {
 		return err
@@ -115,7 +122,10 @@ func (e *Epoll) add(conn net.Conn) error {
 	return nil
 }
 
-func (e *Epoll) remove(client *Client) error {
+func (e *Epoll) remove(ctx context.Context, client *Client) error {
+	ctx, span := e.tracer.Start(ctx, "epoll-remove")
+	defer span.End()
+
 	fd, err := e.getFileDescriptor(client.Conn)
 	if err != nil {
 		return err

@@ -109,15 +109,6 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 							},
 							Env: &[]*k8s.EnvVar{
 								{
-									Name: jsii.String("POD_IP"),
-									ValueFrom: &k8s.EnvVarSource{
-										FieldRef: &k8s.ObjectFieldSelector{
-											ApiVersion: jsii.String("v1"),
-											FieldPath:  jsii.String("status.podIP"),
-										},
-									},
-								},
-								{
 									Name: jsii.String("PROFILE_URL"),
 									ValueFrom: &k8s.EnvVarSource{
 										SecretKeyRef: &k8s.SecretKeySelector{
