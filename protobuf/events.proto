@@ -17,3 +17,7 @@ enum Action {
     CRAFT = 2;
     GATHER = 3;
 }
+
+message UserUpdate {
+    int32 id = 1;
+}

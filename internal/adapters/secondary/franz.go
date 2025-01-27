@@ -99,12 +99,12 @@ func (a *FranzAdapter) SendUserEvent(ctx context.Context, event *protobuf.UserEv
 	return nil
 }
 
-func (a *FranzAdapter) SendUserUpdate(ctx context.Context, event *protobuf.UserEvent) error {
+func (a *FranzAdapter) SendUserUpdate(ctx context.Context, update *protobuf.UserUpdate) error {
 	if a.producer == nil {
 		return nil
 	}
 
-	data, err := proto.Marshal(event)
+	data, err := proto.Marshal(update)
 	if err != nil {
 		return &ErrProtoMarshal{err}
 	}
