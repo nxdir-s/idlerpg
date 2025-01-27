@@ -10,8 +10,8 @@ import (
 )
 
 // RecordError sets the span status and records the error
-func RecordError(span trace.Span, msg string, err error) {
-	span.SetStatus(codes.Error, msg)
+func RecordError(span trace.Span, description string, err error) {
+	span.SetStatus(codes.Error, description)
 	span.RecordError(err)
 }
 
