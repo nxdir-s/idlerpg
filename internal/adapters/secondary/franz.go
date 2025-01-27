@@ -9,6 +9,7 @@ import (
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 )
@@ -16,8 +17,8 @@ import (
 const (
 	MaxPollFetches int = 1000
 
-	UserEventsTopic  string = "user-events"
-	UserUpdatesTopic string = "user-updates"
+	UserEventsTopic  string = "user.events"
+	UserUpdatesTopic string = "user.updates"
 )
 
 type FranzAdapterOpt func(a *FranzAdapter) error
@@ -40,6 +41,7 @@ func WithFranzConsumer(topic string, groupname string, brokers []string, usernam
 
 		a.topic = topic
 		a.consumer = client
+		a.groupName = groupname
 
 		return nil
 	}
@@ -63,11 +65,12 @@ func WithFranzProducer(brokers []string, username string, pass string) FranzAdap
 }
 
 type FranzAdapter struct {
-	producer *kgo.Client
-	consumer *kgo.Client
-	logger   *slog.Logger
-	tracer   trace.Tracer
-	topic    string
+	producer  *kgo.Client
+	consumer  *kgo.Client
+	logger    *slog.Logger
+	tracer    trace.Tracer
+	topic     string
+	groupName string
 }
 
 func NewFranzAdapter(logger *slog.Logger, tracer trace.Tracer, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
@@ -90,7 +93,15 @@ func (a *FranzAdapter) SendUserEvent(ctx context.Context, event *protobuf.UserEv
 		return nil
 	}
 
-	ctx, span := a.tracer.Start(ctx, "send user.events", trace.WithSpanKind(trace.SpanKindProducer))
+	ctx, span := a.tracer.Start(ctx, "send "+UserEventsTopic,
+		trace.WithSpanKind(trace.SpanKindProducer),
+		trace.WithAttributes(
+			attribute.String("messaging.system", "kafka"),
+			attribute.String("messaging.destination.name", UserEventsTopic),
+			attribute.String("messaging.operation.name", "send"),
+			attribute.String("messaging.operation.type", "send"),
+		),
+	)
 	defer span.End()
 
 	data, err := proto.Marshal(event)
@@ -111,7 +122,15 @@ func (a *FranzAdapter) SendUserUpdate(ctx context.Context, update *protobuf.User
 		return nil
 	}
 
-	ctx, span := a.tracer.Start(ctx, "send user.updates", trace.WithSpanKind(trace.SpanKindProducer))
+	ctx, span := a.tracer.Start(ctx, "send "+UserUpdatesTopic,
+		trace.WithSpanKind(trace.SpanKindProducer),
+		trace.WithAttributes(
+			attribute.String("messaging.system", "kafka"),
+			attribute.String("messaging.destination.name", UserUpdatesTopic),
+			attribute.String("messaging.operation.name", "send"),
+			attribute.String("messaging.operation.type", "send"),
+		),
+	)
 	defer span.End()
 
 	data, err := proto.Marshal(update)
@@ -147,9 +166,28 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			fetches := a.consumer.PollRecords(ctx, MaxPollFetches)
+			ctx, span := a.tracer.Start(ctx, "receive "+UserEventsTopic,
+				trace.WithSpanKind(trace.SpanKindClient),
+				trace.WithAttributes(
+					attribute.String("messaging.system", "kafka"),
+					attribute.String("messaging.consumer.group.name", a.groupName),
+					attribute.String("messaging.operation.name", "receive"),
+					attribute.String("messaging.operation.type", "receive"),
+				),
+			)
 
-			ctx, span := a.tracer.Start(ctx, "process user.events", trace.WithSpanKind(trace.SpanKindConsumer))
+			fetches := a.consumer.PollRecords(ctx, MaxPollFetches)
+			span.End()
+
+			ctx, span = a.tracer.Start(ctx, "process "+UserEventsTopic,
+				trace.WithSpanKind(trace.SpanKindConsumer),
+				trace.WithAttributes(
+					attribute.String("messaging.system", "kafka"),
+					attribute.String("messaging.consumer.group.name", a.groupName),
+					attribute.String("messaging.operation.name", "process"),
+					attribute.String("messaging.operation.type", "process"),
+				),
+			)
 
 			if errors := fetches.Errors(); len(errors) > 0 {
 				for _, e := range errors {
