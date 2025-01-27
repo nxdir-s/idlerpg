@@ -94,6 +94,7 @@ func NewPostgresAdapter(pool PgxPool, logger *slog.Logger, tracer trace.Tracer, 
 	adapter := &PostgresAdapter{
 		conn:   pool,
 		logger: logger,
+		tracer: tracer,
 	}
 
 	for _, opt := range opts {
