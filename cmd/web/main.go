@@ -44,7 +44,7 @@ func main() {
 		EnableSpanProfiles: true,
 	}
 
-	ctx, cleanup, err := telemetry.InitProviders(ctx, otelCfg)
+	cleanup, err := telemetry.InitProviders(ctx, otelCfg)
 	if err != nil {
 		logger.Error("failed to initialize telemetry", slog.Any("err", err))
 		os.Exit(1)

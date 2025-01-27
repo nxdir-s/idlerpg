@@ -13,7 +13,7 @@ require (
 	github.com/grafana/pyroscope-go v1.2.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/nxdir-s/pipelines v1.0.0
-	github.com/nxdir-s/telemetry v1.0.4
+	github.com/nxdir-s/telemetry v1.0.5
 	github.com/twmb/franz-go v1.18.0
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
