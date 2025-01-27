@@ -74,7 +74,7 @@ func main() {
 
 	logger.Info(fmt.Sprintf("listening on %v", listener.Addr()))
 
-	ws, err := web.NewServer(ctx)
+	ws, err := web.NewServer(ctx, logger)
 	if err != nil {
 		logger.Error("failed to create web server", slog.Any("err", err))
 		os.Exit(1)
