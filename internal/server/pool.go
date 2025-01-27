@@ -40,7 +40,7 @@ type Pool struct {
 	logger  *slog.Logger
 }
 
-func NewPool(ctx context.Context, tracer trace.Tracer) *Pool {
+func NewPool(ctx context.Context, logger *slog.Logger, tracer trace.Tracer) *Pool {
 	return &Pool{
 		Connections: make(map[int32]*Client),
 		Register:    make(chan *Client),
@@ -49,6 +49,7 @@ func NewPool(ctx context.Context, tracer trace.Tracer) *Pool {
 		Snapshot:    make(chan chan *Snapshot),
 		EpollEvents: make(chan *EpollEvent),
 		tracer:      tracer,
+		logger:      logger,
 	}
 }
 

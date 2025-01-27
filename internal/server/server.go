@@ -66,7 +66,7 @@ func (gs *GameServer) Start(ctx context.Context) {
 			select {
 			case gs.epoller.Add <- conn:
 			case <-time.After(80 * time.Millisecond):
-				gs.logger.Warn("add to epoll timed out")
+				gs.logger.Warn("add to epoller timed out")
 			}
 		}
 	}
