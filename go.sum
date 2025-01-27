@@ -105,8 +105,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/nxdir-s/pipelines v1.0.0 h1:XX9M121VdBvaqt/XP1dB4xKUnnRXmAE4dVc9yZbUb8M=
 github.com/nxdir-s/pipelines v1.0.0/go.mod h1:w6OW05yULAttmm2bRq34nhaM8Qt3Div5keW2rY2OsAU=
-github.com/nxdir-s/telemetry v1.0.1 h1:DsRQYzcM5D62WsoQ7fGILxB4OCuuxin2cBqkfFE929E=
-github.com/nxdir-s/telemetry v1.0.1/go.mod h1:j06J+proe9zPk+Yc79PYsoVKfoTQ4/GWCi0szwRQYaY=
+github.com/nxdir-s/telemetry v1.0.3 h1:yHcVfGR83nLkqoXbVvmitO5weVdilzyl5hrTZFDszWE=
+github.com/nxdir-s/telemetry v1.0.3/go.mod h1:iu5IS7ppp1Yf/FiWEQMuv+XHur887CsV8OfiYsmuKGc=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -145,8 +145,6 @@ go.opentelemetry.io/contrib/detectors/aws/lambda v0.59.0 h1:r1FlX920n48cu2RwGcCJ
 go.opentelemetry.io/contrib/detectors/aws/lambda v0.59.0/go.mod h1:18+R4dEGQgo8FfRc3PAwCKFgeXAZBMAcQT7YnyHIsCw=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 h1:CV7UdSGJt/Ao6Gp4CXckLxVRRsRgDHoI8XjbL3PDl8s=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0/go.mod h1:FRmFuRJfag1IZ2dPkHnEoSFVgTVPUd2qf5Vi69hLb8I=
-go.opentelemetry.io/contrib/propagators/aws v1.34.0 h1:pv/Yi44N2BM1Kyl6wxO6bTiwcxUA7Deog3Rc7NO9ITE=
-go.opentelemetry.io/contrib/propagators/aws v1.34.0/go.mod h1:1aF3HFtAyIi+B2xJHOdKQcNz+bcDS+JLAZjsohcW1P4=
 go.opentelemetry.io/otel v1.21.0/go.mod h1:QZzNPQPm1zLX4gZK4cMi+71eaorMSGT3A4znnUvNNEo=
 go.opentelemetry.io/otel v1.34.0 h1:zRLXxLCgL1WyKsPVrgbSdMN4c0FMkDAskSTQP+0hdUY=
 go.opentelemetry.io/otel v1.34.0/go.mod h1:OWFPOQ+h4G8xpyjgqo4SxJYdDQ/qmRH+wivy7zzx9oI=

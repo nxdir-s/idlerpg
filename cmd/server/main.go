@@ -108,7 +108,7 @@ func main() {
 	}
 	defer kafka.CloseProducer()
 
-	pool := server.NewPool(ctx, otel.Tracer("server.pool"))
+	pool := server.NewPool(ctx, logger, otel.Tracer("server.pool"))
 	ngin := engine.NewGameEngine(pool, kafka, logger, otel.Tracer("engine"))
 
 	epoll, err := server.NewEpoll(pool, logger, otel.Tracer("server.epoll"))

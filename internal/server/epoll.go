@@ -28,7 +28,6 @@ type Epoll struct {
 	pool   *Pool
 	tracer trace.Tracer
 	logger *slog.Logger
-
 	Add    chan net.Conn
 	Remove chan *Client
 }
