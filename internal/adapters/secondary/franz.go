@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"log/slog"
 
+	"github.com/nxdir-s/idlerpg/internal/util"
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
@@ -89,9 +90,15 @@ func (a *FranzAdapter) SendUserEvent(ctx context.Context, event *protobuf.UserEv
 		return nil
 	}
 
+	ctx, span := a.tracer.Start(ctx, "send user.events", trace.WithSpanKind(trace.SpanKindProducer))
+	defer span.End()
+
 	data, err := proto.Marshal(event)
 	if err != nil {
-		return &ErrProtoMarshal{err}
+		err = &ErrProtoMarshal{err}
+		util.RecordError(span, "error encoding UserEvent", err)
+
+		return err
 	}
 
 	a.producer.Produce(ctx, &kgo.Record{Topic: UserEventsTopic, Value: data}, nil)
@@ -104,9 +111,15 @@ func (a *FranzAdapter) SendUserUpdate(ctx context.Context, update *protobuf.User
 		return nil
 	}
 
+	ctx, span := a.tracer.Start(ctx, "send user.updates", trace.WithSpanKind(trace.SpanKindProducer))
+	defer span.End()
+
 	data, err := proto.Marshal(update)
 	if err != nil {
-		return &ErrProtoMarshal{err}
+		err = &ErrProtoMarshal{err}
+		util.RecordError(span, "error encoding UserUpdate", err)
+
+		return err
 	}
 
 	a.producer.Produce(ctx, &kgo.Record{Topic: UserUpdatesTopic, Value: data}, nil)
@@ -136,10 +149,16 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 		default:
 			fetches := a.consumer.PollRecords(ctx, MaxPollFetches)
 
+			ctx, span := a.tracer.Start(ctx, "process user.events", trace.WithSpanKind(trace.SpanKindConsumer))
+
 			if errors := fetches.Errors(); len(errors) > 0 {
 				for _, e := range errors {
 					if e.Err == context.Canceled {
 						a.logger.Error("received interrupt", slog.Any("err", e.Err))
+
+						util.RecordError(span, "received interrupt", e.Err)
+						span.End()
+
 						return
 					}
 
@@ -154,6 +173,10 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 				var msg protobuf.UserEvent
 				if err := proto.Unmarshal(record.Value, &msg); err != nil {
 					a.logger.Error("error decoding UserEvent", slog.Any("err", err))
+
+					util.RecordError(span, "error decoding UserEvent", err)
+					span.End()
+
 					continue
 				}
 
@@ -166,6 +189,10 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 			if err := a.consumer.CommitUncommittedOffsets(ctx); err != nil {
 				if err == context.Canceled {
 					a.logger.Error("received interrupt", slog.Any("err", err))
+
+					util.RecordError(span, "received interrupt", err)
+					span.End()
+
 					return
 				}
 
@@ -173,6 +200,7 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 			}
 
 			a.consumer.AllowRebalance()
+			span.End()
 		}
 	}
 }
