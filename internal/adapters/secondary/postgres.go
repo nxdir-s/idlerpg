@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nxdir-s/idlerpg/internal/ports"
-	"github.com/nxdir-s/idlerpg/internal/telemetry/spans"
 	"github.com/nxdir-s/idlerpg/internal/util"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -111,7 +110,7 @@ func (a *PostgresAdapter) NewTransactionAdapter(ctx context.Context) (ports.Data
 		return nil, err
 	}
 
-	txAdapter, err := NewPostgresAdapter(ctx, tx, a.logger, WithPgxTx(tx))
+	txAdapter, err := NewPostgresAdapter(tx, a.logger, a.tracer, WithPgxTx(tx))
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,7 @@ func (a *PostgresAdapter) Rollback(ctx context.Context) error {
 
 // CreateUser creates a new user and returns the user's id
 func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, error) {
-	ctx, span := a.tracer.Start(ctx, spans.CreateUser,
+	ctx, span := a.tracer.Start(ctx, "create.user",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -152,7 +151,7 @@ func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, er
 	err := a.conn.QueryRow(ctx, CreateUserQuery, args).Scan(&userId)
 	if err != nil {
 		err = &ErrExecQuery{err}
-		util.RecordError(span, spans.CreateUser+" failed", err)
+		util.RecordError(span, "create.user failed", err)
 
 		return 0, err
 	}
@@ -170,7 +169,7 @@ const CreateUserQuery string = `
 
 // RemoveUser deletes a user using the supplied id
 func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
-	ctx, span := a.tracer.Start(ctx, spans.RemoveUser,
+	ctx, span := a.tracer.Start(ctx, "remove.user",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -182,7 +181,7 @@ func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
 	resp, err := a.conn.Exec(ctx, RemoveUserQuery, args)
 	if err != nil {
 		err = &ErrExecQuery{err}
-		util.RecordError(span, spans.RemoveUser+" failed", err)
+		util.RecordError(span, "remove.user failed", err)
 
 		return err
 	}
@@ -200,7 +199,7 @@ const RemoveUserQuery string = `
 `
 
 func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, error) {
-	ctx, span := a.tracer.Start(ctx, spans.GetUserId,
+	ctx, span := a.tracer.Start(ctx, "get.user.id",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -213,7 +212,7 @@ func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, err
 	err := a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, spans.GetUserId+" failed", err)
+		util.RecordError(span, "get.user.id failed", err)
 
 		return 0, err
 	}
@@ -232,7 +231,7 @@ const UserIdQuery string = `
 `
 
 func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) {
-	ctx, span := a.tracer.Start(ctx, spans.UserExists,
+	ctx, span := a.tracer.Start(ctx, "user.exists",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -245,7 +244,7 @@ func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) 
 	err := a.conn.QueryRow(ctx, UserExistsQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, spans.UserExists+" failed", err)
+		util.RecordError(span, "user.exists failed", err)
 
 		return false, err
 	}
@@ -264,7 +263,7 @@ const UserExistsQuery string = `
 `
 
 func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, error) {
-	ctx, span := a.tracer.Start(ctx, spans.EmailExists,
+	ctx, span := a.tracer.Start(ctx, "email.exists",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -277,7 +276,7 @@ func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, 
 	err := a.conn.QueryRow(ctx, EmailExistsQuery, args).Scan(&userEmail)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, spans.EmailExists+" failed", err)
+		util.RecordError(span, "email.exists failed", err)
 
 		return false, err
 	}
@@ -296,7 +295,7 @@ const EmailExistsQuery string = `
 `
 
 func (a *PostgresAdapter) UpdateRefreshToken(ctx context.Context, id int, token string) error {
-	ctx, span := a.tracer.Start(ctx, spans.UpdateRefreshToken,
+	ctx, span := a.tracer.Start(ctx, "update.refresh.token",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -309,7 +308,7 @@ func (a *PostgresAdapter) UpdateRefreshToken(ctx context.Context, id int, token 
 	resp, err := a.conn.Exec(ctx, UpdateRefreshTokenQuery, args)
 	if err != nil {
 		err = &ErrExecQuery{err}
-		util.RecordError(span, spans.UpdateRefreshToken+" failed", err)
+		util.RecordError(span, "update.refresh.token failed", err)
 
 		return err
 	}
