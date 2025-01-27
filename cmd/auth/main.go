@@ -13,42 +13,15 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/adapters/primary"
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
 	"github.com/nxdir-s/idlerpg/internal/auth"
+	"github.com/nxdir-s/idlerpg/internal/config"
 	"github.com/nxdir-s/idlerpg/internal/core/domain"
 	"github.com/nxdir-s/idlerpg/internal/core/service"
 	"github.com/nxdir-s/idlerpg/internal/logs"
+	"github.com/nxdir-s/idlerpg/internal/observability"
 	"github.com/nxdir-s/idlerpg/internal/ports"
+	"github.com/nxdir-s/telemetry"
+	"go.opentelemetry.io/otel"
 )
-
-const (
-	DefaultAddr string = "0.0.0.0:9000"
-)
-
-type ErrService struct {
-	service string
-	err     error
-}
-
-func (e *ErrService) Error() string {
-	return "error creating " + e.service + " service: " + e.err.Error()
-}
-
-type ErrOrchestrator struct {
-	domain string
-	err    error
-}
-
-func (e *ErrOrchestrator) Error() string {
-	return "error creating " + e.domain + " orchestrator: " + e.err.Error()
-}
-
-type ErrAdapter struct {
-	adapter string
-	err     error
-}
-
-func (e *ErrAdapter) Error() string {
-	return "error creating " + e.adapter + " adapter: " + e.err.Error()
-}
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -57,14 +30,55 @@ func main() {
 	logger := slog.New(logs.NewHandler(slog.NewTextHandler(os.Stdout, nil)))
 	slog.SetDefault(logger)
 
-	var lc net.ListenConfig
-	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
+	cfg, err := config.New(
+		config.WithListenerAddr(),
+		config.WithOtelServiceName(),
+		config.WithOtelEndpoint(),
+		config.WithProfileURL(),
+		config.WithGrafanaUsr(),
+		config.WithGrafanaPass(),
+	)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create tcp listener: %s\n", err.Error())
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stdout, "listening on %v\n", listener.Addr())
+	otelCfg := &telemetry.Config{
+		ServiceName:        cfg.OtelService,
+		OtelEndpoint:       cfg.OtelEndpoint,
+		Insecure:           true,
+		EnableSpanProfiles: true,
+	}
+
+	ctx, cleanup, err := telemetry.InitProviders(ctx, otelCfg)
+	if err != nil {
+		logger.Error("failed to initialize telemetry", slog.Any("err", err))
+		os.Exit(1)
+	}
+	defer cleanup(ctx)
+
+	profileCfg := &observability.ProfileConfig{
+		ApplicationName: cfg.OtelService,
+		ServerAddress:   cfg.ProfileURL,
+		AuthUser:        cfg.GrafanaUsr,
+		AuthPassword:    cfg.GrafanaPass,
+	}
+
+	profiler, err := observability.NewProfiler(profileCfg)
+	if err != nil {
+		logger.Error("failed to start profiler", slog.Any("err", err))
+		os.Exit(1)
+	}
+	defer profiler.Stop()
+
+	var lc net.ListenConfig
+	listener, err := lc.Listen(ctx, "tcp", cfg.ListenerAddr)
+	if err != nil {
+		logger.Error("failed to create tcp listener", slog.Any("err", err))
+		os.Exit(1)
+	}
+
+	logger.Info(fmt.Sprintf("listening on %v", listener.Addr()))
 
 	// secondary adapters
 	var database ports.DatabasePort
@@ -82,19 +96,19 @@ func main() {
 	var pgxPool secondary.PgxPool
 	pgxPool, err = secondary.NewPgxPool(ctx, "dbUrl")
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", err)
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
-	database, err = secondary.NewPostgresAdapter(ctx, pgxPool, logger)
+	database, err = secondary.NewPostgresAdapter(pgxPool, logger, otel.Tracer("postgres"))
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", &ErrAdapter{"postgres", err})
+		logger.Error("failed to create postgres adapter", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	userService, err = service.NewUserService(ctx, database)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", &ErrService{"user", err})
+		logger.Error("failed to create user service", slog.Any("err", err))
 		os.Exit(1)
 	}
 
@@ -102,19 +116,19 @@ func main() {
 
 	users, err = domain.NewUsers(ctx, userService, jwt)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", &ErrOrchestrator{"users", err})
+		logger.Error("failed to create users domain orchestrator", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	authAdapter, err = primary.NewAuthAdapter(ctx, users, jwt)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%+v\n", &ErrAdapter{"auth", err})
+		logger.Error("failed to create auth adapter", slog.Any("err", err))
 		os.Exit(1)
 	}
 
 	s, err := auth.NewServer(ctx, authAdapter)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "failed to create auth server: %s\n", err.Error())
+		logger.Error("failed to create auth server", slog.Any("err", err))
 		os.Exit(1)
 	}
 
@@ -129,16 +143,16 @@ func main() {
 
 	errChan := make(chan error, 1)
 	go func() {
-		fmt.Fprint(os.Stdout, "starting server...\n")
+		logger.Info("starting server")
 		errChan <- server.Serve(listener)
 	}()
 
 	select {
 	case <-ctx.Done():
-		fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+		logger.Info(ctx.Err().Error())
 	case err := <-errChan:
 		if err != nil {
-			fmt.Fprintf(os.Stdout, "failed to serve: %s\n", err.Error())
+			logger.Error("failed to serve", slog.Any("err", err))
 		}
 	}
 
@@ -146,7 +160,7 @@ func main() {
 	defer timeout()
 
 	if err := server.Shutdown(ctx); err != nil {
-		fmt.Fprintf(os.Stdout, "failed to shutdown server: %s\n", err.Error())
+		logger.Error("failed to shutdown server", slog.Any("err", err))
 		os.Exit(1)
 	}
 }

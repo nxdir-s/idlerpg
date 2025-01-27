@@ -8,6 +8,7 @@ import (
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -59,14 +60,15 @@ func WithFranzProducer(brokers []string, username string, pass string) FranzAdap
 type FranzAdapter struct {
 	producer *kgo.Client
 	consumer *kgo.Client
-	topic    string
 	logger   *slog.Logger
+	tracer   trace.Tracer
+	topic    string
 }
 
-func NewFranzAdapter(ctx context.Context, topic string, logger *slog.Logger, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
+func NewFranzAdapter(topic string, logger *slog.Logger, tracer trace.Tracer, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
 	adapter := &FranzAdapter{
-		topic:  topic,
 		logger: logger,
+		topic:  topic,
 	}
 
 	for _, opt := range opts {

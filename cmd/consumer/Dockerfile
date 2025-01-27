@@ -12,7 +12,4 @@ WORKDIR /app
 
 COPY --from=builder /app/bootstrap /app/bootstrap
 
-# Set the timezone and install CA certificates
-# RUN apk --no-cache add ca-certificates tzdata
-
 CMD ["/app/bootstrap"]

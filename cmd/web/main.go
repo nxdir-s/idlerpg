@@ -8,17 +8,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
 	"time"
 
-	"github.com/grafana/pyroscope-go"
+	"github.com/nxdir-s/idlerpg/internal/config"
 	"github.com/nxdir-s/idlerpg/internal/logs"
+	"github.com/nxdir-s/idlerpg/internal/observability"
 	"github.com/nxdir-s/idlerpg/web"
 	"github.com/nxdir-s/telemetry"
-)
-
-const (
-	DefaultAddr string = "0.0.0.0:8080"
 )
 
 func main() {
@@ -28,73 +24,41 @@ func main() {
 	logger := slog.New(logs.NewHandler(slog.NewTextHandler(os.Stdout, nil)))
 	slog.SetDefault(logger)
 
-	serviceName := os.Getenv("OTEL_SERVICE_NAME")
-	if serviceName == "" {
-		logger.Error("missing env var: OTEL_SERVICE_NAME")
+	cfg, err := config.New(
+		config.WithListenerAddr(),
+		config.WithOtelServiceName(),
+		config.WithOtelEndpoint(),
+		config.WithProfileURL(),
+		config.WithGrafanaUsr(),
+		config.WithGrafanaPass(),
+	)
+	if err != nil {
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 
-	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if otelEndpoint == "" {
-		logger.Error("missing env var: OTEL_EXPORTER_OTLP_ENDPOINT")
-		os.Exit(1)
-	}
-
-	profileUrl := os.Getenv("PROFILE_URL")
-	if profileUrl == "" {
-		logger.Error("missing env var: PROFILE_URL")
-		os.Exit(1)
-	}
-
-	gcUser := os.Getenv("GCLOUD_USER")
-	if gcUser == "" {
-		logger.Error("missing env var: GCLOUD_USER")
-		os.Exit(1)
-	}
-
-	gcPass := os.Getenv("GCLOUD_PASSWORD")
-	if gcUser == "" {
-		logger.Error("missing env var: GCLOUD_PASSWORD")
-		os.Exit(1)
-	}
-
-	cfg := &telemetry.Config{
-		ServiceName:        serviceName,
-		OtelEndpoint:       otelEndpoint,
+	otelCfg := &telemetry.Config{
+		ServiceName:        cfg.OtelService,
+		OtelEndpoint:       cfg.OtelEndpoint,
 		Insecure:           true,
 		EnableSpanProfiles: true,
 	}
 
-	ctx, cleanup, err := telemetry.InitProviders(ctx, cfg)
+	ctx, cleanup, err := telemetry.InitProviders(ctx, otelCfg)
 	if err != nil {
 		logger.Error("failed to initialize telemetry", slog.Any("err", err))
 		os.Exit(1)
 	}
 	defer cleanup(ctx)
 
-	runtime.SetMutexProfileFraction(5)
-	runtime.SetBlockProfileRate(5)
-
-	profileCfg := pyroscope.Config{
-		ApplicationName:   serviceName,
-		ServerAddress:     profileUrl,
-		BasicAuthUser:     gcUser,
-		BasicAuthPassword: gcPass,
-		ProfileTypes: []pyroscope.ProfileType{
-			pyroscope.ProfileCPU,
-			pyroscope.ProfileAllocObjects,
-			pyroscope.ProfileAllocSpace,
-			pyroscope.ProfileInuseObjects,
-			pyroscope.ProfileInuseSpace,
-			pyroscope.ProfileGoroutines,
-			pyroscope.ProfileMutexCount,
-			pyroscope.ProfileMutexDuration,
-			pyroscope.ProfileBlockCount,
-			pyroscope.ProfileBlockDuration,
-		},
+	profileCfg := &observability.ProfileConfig{
+		ApplicationName: cfg.OtelService,
+		ServerAddress:   cfg.ProfileURL,
+		AuthUser:        cfg.GrafanaUsr,
+		AuthPassword:    cfg.GrafanaPass,
 	}
 
-	profiler, err := pyroscope.Start(profileCfg)
+	profiler, err := observability.NewProfiler(profileCfg)
 	if err != nil {
 		logger.Error("failed to start profiler", slog.Any("err", err))
 		os.Exit(1)
@@ -102,7 +66,7 @@ func main() {
 	defer profiler.Stop()
 
 	var lc net.ListenConfig
-	listener, err := lc.Listen(ctx, "tcp", DefaultAddr)
+	listener, err := lc.Listen(ctx, "tcp", cfg.ListenerAddr)
 	if err != nil {
 		logger.Error("failed to create tcp listener", slog.Any("err", err))
 		os.Exit(1)

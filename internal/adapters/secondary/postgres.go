@@ -87,10 +87,11 @@ type PostgresAdapter struct {
 	conn   PgxPool
 	tx     PgxTx
 	logger *slog.Logger
+	tracer trace.Tracer
 }
 
 // NewPostgresAdapter creates a new PostgresAdapter
-func NewPostgresAdapter(ctx context.Context, pool PgxPool, logger *slog.Logger, opts ...PostgresOpt) (*PostgresAdapter, error) {
+func NewPostgresAdapter(pool PgxPool, logger *slog.Logger, tracer trace.Tracer, opts ...PostgresOpt) (*PostgresAdapter, error) {
 	adapter := &PostgresAdapter{
 		conn:   pool,
 		logger: logger,
@@ -138,12 +139,7 @@ func (a *PostgresAdapter) Rollback(ctx context.Context) error {
 
 // CreateUser creates a new user and returns the user's id
 func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, error) {
-	tracer, err := util.GetTracer(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	ctx, span := tracer.Start(ctx, spans.CreateUser,
+	ctx, span := a.tracer.Start(ctx, spans.CreateUser,
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -153,7 +149,7 @@ func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, er
 	}
 
 	var userId int
-	err = a.conn.QueryRow(ctx, CreateUserQuery, args).Scan(&userId)
+	err := a.conn.QueryRow(ctx, CreateUserQuery, args).Scan(&userId)
 	if err != nil {
 		err = &ErrExecQuery{err}
 		util.RecordError(span, spans.CreateUser+" failed", err)
@@ -174,12 +170,7 @@ const CreateUserQuery string = `
 
 // RemoveUser deletes a user using the supplied id
 func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
-	tracer, err := util.GetTracer(ctx)
-	if err != nil {
-		return err
-	}
-
-	ctx, span := tracer.Start(ctx, spans.RemoveUser,
+	ctx, span := a.tracer.Start(ctx, spans.RemoveUser,
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -209,12 +200,7 @@ const RemoveUserQuery string = `
 `
 
 func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, error) {
-	tracer, err := util.GetTracer(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	ctx, span := tracer.Start(ctx, spans.GetUserId,
+	ctx, span := a.tracer.Start(ctx, spans.GetUserId,
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -224,7 +210,7 @@ func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, err
 	}
 
 	var userId int
-	err = a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
+	err := a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
 		util.RecordError(span, spans.GetUserId+" failed", err)
@@ -246,12 +232,7 @@ const UserIdQuery string = `
 `
 
 func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) {
-	tracer, err := util.GetTracer(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	ctx, span := tracer.Start(ctx, spans.UserExists,
+	ctx, span := a.tracer.Start(ctx, spans.UserExists,
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -261,7 +242,7 @@ func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) 
 	}
 
 	var userId int
-	err = a.conn.QueryRow(ctx, UserExistsQuery, args).Scan(&userId)
+	err := a.conn.QueryRow(ctx, UserExistsQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
 		util.RecordError(span, spans.UserExists+" failed", err)
@@ -283,12 +264,7 @@ const UserExistsQuery string = `
 `
 
 func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, error) {
-	tracer, err := util.GetTracer(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	ctx, span := tracer.Start(ctx, spans.EmailExists,
+	ctx, span := a.tracer.Start(ctx, spans.EmailExists,
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()
@@ -298,7 +274,7 @@ func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, 
 	}
 
 	var userEmail string
-	err = a.conn.QueryRow(ctx, EmailExistsQuery, args).Scan(&userEmail)
+	err := a.conn.QueryRow(ctx, EmailExistsQuery, args).Scan(&userEmail)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
 		util.RecordError(span, spans.EmailExists+" failed", err)
@@ -320,12 +296,7 @@ const EmailExistsQuery string = `
 `
 
 func (a *PostgresAdapter) UpdateRefreshToken(ctx context.Context, id int, token string) error {
-	tracer, err := util.GetTracer(ctx)
-	if err != nil {
-		return err
-	}
-
-	ctx, span := tracer.Start(ctx, spans.UpdateRefreshToken,
+	ctx, span := a.tracer.Start(ctx, spans.UpdateRefreshToken,
 		trace.WithLinks(trace.LinkFromContext(ctx)),
 	)
 	defer span.End()

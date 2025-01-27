@@ -1,6 +1,8 @@
 package servers
 
 import (
+	"fmt"
+
 	"example.com/charts/imports/k8s"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
@@ -44,6 +46,7 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 
 	configMap := NewWSConfig(server, jsii.String(*id+"-cm"), &WSConfigProps{
 		Namespace: props.Namespace,
+		Port:      port,
 	})
 
 	service := k8s.NewKubeService(server, jsii.String(*id+"-srv"), &k8s.KubeServiceProps{
@@ -164,6 +167,7 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 
 type WSConfigProps struct {
 	Namespace k8s.KubeNamespace
+	Port      *float64
 }
 
 func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k8s.KubeConfigMap {
@@ -174,10 +178,10 @@ func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k
 		},
 		Immutable: jsii.Bool(false),
 		Data: &map[string]*string{
-			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
-			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
-			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
 			"OTEL_SERVICE_NAME":                  jsii.String("webserver"),
+			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
+			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
+			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", *props.Port)),
 		},
 	})
 }
