@@ -2,9 +2,8 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net"
-	"os"
 	"time"
 
 	"github.com/gobwas/ws"
@@ -24,9 +23,10 @@ type GameServer struct {
 	engine      Startable
 	connections *Pool
 	epoller     *Epoll
+	logger      *slog.Logger
 }
 
-func NewGameServer(ctx context.Context, ln net.Listener, epoll *Epoll, ngin Startable, pool *Pool) *GameServer {
+func NewGameServer(ctx context.Context, ln net.Listener, epoll *Epoll, ngin Startable, pool *Pool, logger *slog.Logger) *GameServer {
 	go pool.Start(ctx)
 	go epoll.Start(ctx)
 	go ngin.Start(ctx)
@@ -36,6 +36,7 @@ func NewGameServer(ctx context.Context, ln net.Listener, epoll *Epoll, ngin Star
 		engine:      ngin,
 		connections: pool,
 		epoller:     epoll,
+		logger:      logger,
 	}
 
 	return server
@@ -52,20 +53,20 @@ func (gs *GameServer) Start(ctx context.Context) {
 		default:
 			conn, err := gs.listener.Accept()
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "failed to accept tcp connection: %+v\n", err)
+				gs.logger.Error("failed to accept tcp connection", slog.Any("err", err))
 				continue
 			}
 
 			_, err = ws.Upgrade(conn)
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "failed to upgrade tcp connection: %+v\n", err)
+				gs.logger.Error("failed to upgrade tcp connection", slog.Any("err", err))
 				continue
 			}
 
 			select {
 			case gs.epoller.Add <- conn:
 			case <-time.After(80 * time.Millisecond):
-				fmt.Fprint(os.Stdout, "add to epoll timed out...\n")
+				gs.logger.Warn("add to epoll timed out")
 			}
 		}
 	}
@@ -80,12 +81,12 @@ func (gs *GameServer) listen(ctx context.Context) {
 		default:
 			clients, err := gs.epoller.Wait()
 			if err != nil {
-				fmt.Fprintf(os.Stdout, "failed to recieve epoll event: %+v\n", err)
+				gs.logger.Error("failed to recieve epoll event", slog.Any("err", err))
 				continue
 			}
 
 			readMsg := func(ctx context.Context, client *Client) error {
-				return client.ReadMessage(ctx, gs.epoller)
+				return client.ReadMessage(ctx, gs.epoller, gs.logger)
 			}
 
 			stream := pipelines.StreamSlice(ctx, clients)
@@ -95,11 +96,11 @@ func (gs *GameServer) listen(ctx context.Context) {
 			for err := range errChan {
 				select {
 				case <-ctx.Done():
-					fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+					gs.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 					return
 				default:
 					if err != nil {
-						fmt.Fprintf(os.Stdout, "failed to read client message: %+v\n", err)
+						gs.logger.Error("failed to read client message", slog.Any("err", err))
 					}
 				}
 			}

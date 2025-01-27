@@ -112,13 +112,13 @@ func main() {
 	pool := server.NewPool(ctx, otel.Tracer("server.pool"))
 	ngin := engine.NewGameEngine(pool, kafka, logger, otel.Tracer("engine"))
 
-	epoll, err := server.NewEpoll(ctx, pool, otel.Tracer("server.epoll"))
+	epoll, err := server.NewEpoll(pool, logger, otel.Tracer("server.epoll"))
 	if err != nil {
 		logger.Error("failed to create epoll", slog.Any("err", err))
 		os.Exit(1)
 	}
 
-	server := server.NewGameServer(ctx, listener, epoll, ngin, pool)
+	server := server.NewGameServer(ctx, listener, epoll, ngin, pool, logger)
 
 	logger.Info("starting server")
 

@@ -66,7 +66,7 @@ func (ngin *GameEngine) Start(ctx context.Context) {
 				break
 			}
 
-			ctx, span := ngin.tracer.Start(ctx, "server-tick")
+			ctx, span := ngin.tracer.Start(ctx, "tick")
 
 			ngin.logger.Info("server tick")
 
@@ -94,7 +94,7 @@ func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Cli
 		return
 	}
 
-	ctx, span := ngin.tracer.Start(ctx, "processing")
+	ctx, span := ngin.tracer.Start(ctx, "process")
 	defer span.End()
 
 	ngin.logger.Info("processing user actions", slog.Int("connections", len(users)))
@@ -110,7 +110,7 @@ func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Cli
 	for err := range errChan {
 		select {
 		case <-ctx.Done():
-			ngin.logger.Error(ctx.Err().Error())
+			ngin.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 			return
 		default:
 			if err != nil {
@@ -133,7 +133,7 @@ func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *pr
 func (ngin *GameEngine) buildEvent(ctx context.Context, t time.Time) *valobj.Event {
 	return &valobj.Event{
 		Ctx: ctx,
-		Msg: valobj.Message{
+		Msg: &valobj.Message{
 			Value: "server tick: " + t.UTC().String(),
 		},
 		Consumed: make(chan struct{}),

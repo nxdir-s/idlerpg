@@ -69,7 +69,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	s.mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+	s.mux.Handle("/static/", otelhttp.NewHandler(http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))), "static"))
 
 	s.mux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleIndex)), "index"))
 	s.mux.Handle("/dashboard", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleDashboard)), "dashboard"))
