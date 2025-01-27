@@ -184,6 +184,7 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 
 type ConsumerCfgProps struct {
 	Namespace k8s.KubeNamespace
+	Port      *float64
 }
 
 func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgProps) k8s.KubeConfigMap {
@@ -195,7 +196,6 @@ func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgPr
 		Immutable: jsii.Bool(false),
 		Data: &map[string]*string{
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
-			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
 			"OTEL_SERVICE_NAME":                  jsii.String("consumer"),
 			"CONSUMER_GROUP_NAME":                jsii.String("consumer-dev"),

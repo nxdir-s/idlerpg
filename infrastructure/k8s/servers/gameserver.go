@@ -1,6 +1,8 @@
 package servers
 
 import (
+	"fmt"
+
 	"example.com/charts/imports/k8s"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
@@ -44,6 +46,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 
 	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), &GSConfigProps{
 		Namespace: props.Namespace,
+		Port:      port,
 	})
 
 	service := k8s.NewKubeService(server, jsii.String(*id+"-srv"), &k8s.KubeServiceProps{
@@ -191,6 +194,7 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 
 type GSConfigProps struct {
 	Namespace k8s.KubeNamespace
+	Port      *float64
 }
 
 func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k8s.KubeConfigMap {
@@ -201,11 +205,10 @@ func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k
 		},
 		Immutable: jsii.Bool(false),
 		Data: &map[string]*string{
-			// "BROKERS":                            jsii.String("kafka-1:19092,kafka-2:19092,kafka-3:19092"),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
-			"OTEL_RESOURCE_ATTRIBUTES":           jsii.String("ip=$(POD_IP)"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
 			"OTEL_SERVICE_NAME":                  jsii.String("gameserver"),
+			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", *props.Port)),
 		},
 	})
 }
