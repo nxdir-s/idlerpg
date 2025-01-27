@@ -2,9 +2,8 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net"
-	"os"
 	"syscall"
 
 	"github.com/nxdir-s/idlerpg/internal/core/entity"
@@ -25,17 +24,17 @@ func (e *ErrEpoll) Error() string {
 }
 
 type Epoll struct {
-	fd   int
-	pool *Pool
+	fd     int
+	pool   *Pool
+	tracer trace.Tracer
+	logger *slog.Logger
 
 	Add    chan net.Conn
 	Remove chan *Client
-
-	tracer trace.Tracer
 }
 
 // NewEpoll creates an Epoll
-func NewEpoll(ctx context.Context, pool *Pool, tracer trace.Tracer) (*Epoll, error) {
+func NewEpoll(pool *Pool, logger *slog.Logger, tracer trace.Tracer) (*Epoll, error) {
 	fd, err := unix.EpollCreate1(0)
 	if err != nil {
 		return nil, &ErrEpoll{err}
@@ -44,9 +43,10 @@ func NewEpoll(ctx context.Context, pool *Pool, tracer trace.Tracer) (*Epoll, err
 	return &Epoll{
 		fd:     fd,
 		pool:   pool,
+		tracer: tracer,
+		logger: logger,
 		Add:    make(chan net.Conn, ClientBuffer),
 		Remove: make(chan *Client, ClientBuffer),
-		tracer: tracer,
 	}, nil
 }
 
@@ -58,11 +58,11 @@ func (e *Epoll) Start(ctx context.Context) {
 			return
 		case conn := <-e.Add:
 			if err := e.add(ctx, conn); err != nil {
-				fmt.Fprintf(os.Stdout, "failed to add connection: %+v\n", err)
+				e.logger.Error("failed to add connection", slog.Any("err", err))
 			}
 		case client := <-e.Remove:
 			if err := e.remove(ctx, client); err != nil {
-				fmt.Fprintf(os.Stdout, "failed to remove connection: %+v\n", err)
+				e.logger.Error("failed to remove connection", slog.Any("err", err))
 			}
 		}
 	}
@@ -92,7 +92,7 @@ func (e *Epoll) Wait() ([]*Client, error) {
 }
 
 func (e *Epoll) add(ctx context.Context, conn net.Conn) error {
-	ctx, span := e.tracer.Start(ctx, "epoll-add")
+	ctx, span := e.tracer.Start(ctx, "add.client")
 	defer span.End()
 
 	fd, err := e.getFileDescriptor(conn)
@@ -123,7 +123,7 @@ func (e *Epoll) add(ctx context.Context, conn net.Conn) error {
 }
 
 func (e *Epoll) remove(ctx context.Context, client *Client) error {
-	ctx, span := e.tracer.Start(ctx, "epoll-remove")
+	ctx, span := e.tracer.Start(ctx, "remove.client")
 	defer span.End()
 
 	fd, err := e.getFileDescriptor(client.Conn)

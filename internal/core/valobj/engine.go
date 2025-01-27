@@ -4,7 +4,7 @@ import "context"
 
 type Event struct {
 	Ctx      context.Context
-	Msg      Message
+	Msg      *Message
 	Consumed chan struct{}
 }
 

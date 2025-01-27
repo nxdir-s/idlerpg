@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
-	"os"
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
@@ -20,7 +20,7 @@ type Client struct {
 	User *entity.User
 }
 
-func (c *Client) SendMessage(ctx context.Context, msg valobj.Message) error {
+func (c *Client) SendMessage(ctx context.Context, msg *valobj.Message) error {
 	wr := wsutil.NewWriter(c.Conn, ws.StateServerSide, ws.OpText)
 
 	if err := json.NewEncoder(wr).Encode(msg); err != nil {
@@ -34,17 +34,17 @@ func (c *Client) SendMessage(ctx context.Context, msg valobj.Message) error {
 	return nil
 }
 
-func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll) error {
+func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll, logger *slog.Logger) error {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+			logger.Warn("context cancelled while reading client message", slog.Any("err", ctx.Err()))
 			return nil
 		default:
 			header, err := ws.ReadHeader(c.Conn)
 			if err != nil {
 				if err == io.EOF {
-					fmt.Fprintf(os.Stdout, "%d disconnected...\n", c.User.Id)
+					logger.Info(fmt.Sprintf("%d disconnected", c.User.Id))
 					epoller.Remove <- c
 
 					return nil

@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"github.com/nxdir-s/pipelines"
@@ -58,7 +56,7 @@ func (p *Pool) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Fprintf(os.Stdout, "%s\n", ctx.Err().Error())
+			p.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 			return
 		case client := <-p.Register:
 			// using counter for testing
@@ -72,7 +70,7 @@ func (p *Pool) Start(ctx context.Context) {
 			delete(p.Connections, fd)
 			p.logger.Info("removed client from pool", slog.Int("connections", len(p.Connections)))
 		case event := <-p.EpollEvents:
-			_, span := p.tracer.Start(ctx, "epoll-events")
+			_, span := p.tracer.Start(ctx, "events.epoll")
 
 			connections := make([]*Client, 0, len(event.Events))
 			for i := range event.Events {
@@ -114,7 +112,7 @@ func (p *Pool) Start(ctx context.Context) {
 			for err := range errChan {
 				select {
 				case <-ctx.Done():
-					p.logger.Info("context cancelled", slog.Any("err", ctx.Err()))
+					p.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 					return
 				default:
 					if err != nil {
