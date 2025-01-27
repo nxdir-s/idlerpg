@@ -126,5 +126,6 @@ func main() {
 	select {
 	case <-ctx.Done():
 		logger.Info(ctx.Err().Error())
+		os.Exit(0)
 	}
 }
