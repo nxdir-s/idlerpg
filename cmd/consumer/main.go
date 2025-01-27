@@ -69,10 +69,11 @@ func main() {
 	defer profiler.Stop()
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewFranzAdapter("user-events",
+	kafka, err = secondary.NewFranzAdapter(
 		logger,
 		otel.Tracer("kafka.franz"),
 		secondary.WithFranzConsumer(
+			"user-events",
 			cfg.ConsumerName,
 			strings.Split(cfg.Brokers, ","),
 			cfg.RedPandaUsr,

@@ -37,6 +37,8 @@ func main() {
 		config.WithProfileURL(),
 		config.WithGrafanaUsr(),
 		config.WithGrafanaPass(),
+		config.WithGoogleClientID(),
+		config.WithGoogleClientSecret(),
 	)
 	if err != nil {
 		logger.Error(err.Error())
@@ -126,7 +128,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	s, err := auth.NewServer(ctx, authAdapter)
+	s, err := auth.NewServer(ctx, cfg, authAdapter)
 	if err != nil {
 		logger.Error("failed to create auth server", slog.Any("err", err))
 		os.Exit(1)
