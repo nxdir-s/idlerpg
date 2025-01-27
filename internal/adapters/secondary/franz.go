@@ -14,18 +14,21 @@ import (
 
 const (
 	MaxPollFetches int = 1000
+
+	UserEventsTopic  string = "user-events"
+	UserUpdatesTopic string = "user-updates"
 )
 
 type FranzAdapterOpt func(a *FranzAdapter) error
 
-func WithFranzConsumer(groupname string, brokers []string, username string, pass string) FranzAdapterOpt {
+func WithFranzConsumer(topic string, groupname string, brokers []string, username string, pass string) FranzAdapterOpt {
 	return func(a *FranzAdapter) error {
 		client, err := kgo.NewClient(
 			kgo.SeedBrokers(brokers...),
 			kgo.DialTLSConfig(&tls.Config{}),
 			kgo.SASL(scram.Auth{User: username, Pass: pass}.AsSha256Mechanism()),
 			kgo.ConsumerGroup(groupname),
-			kgo.ConsumeTopics(a.topic),
+			kgo.ConsumeTopics(topic),
 			kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 			kgo.DisableAutoCommit(),
 			kgo.BlockRebalanceOnPoll(),
@@ -34,6 +37,7 @@ func WithFranzConsumer(groupname string, brokers []string, username string, pass
 			return err
 		}
 
+		a.topic = topic
 		a.consumer = client
 
 		return nil
@@ -65,10 +69,10 @@ type FranzAdapter struct {
 	topic    string
 }
 
-func NewFranzAdapter(topic string, logger *slog.Logger, tracer trace.Tracer, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
+func NewFranzAdapter(logger *slog.Logger, tracer trace.Tracer, opts ...FranzAdapterOpt) (*FranzAdapter, error) {
 	adapter := &FranzAdapter{
 		logger: logger,
-		topic:  topic,
+		tracer: tracer,
 	}
 
 	for _, opt := range opts {
@@ -90,7 +94,22 @@ func (a *FranzAdapter) SendUserEvent(ctx context.Context, event *protobuf.UserEv
 		return &ErrProtoMarshal{err}
 	}
 
-	a.producer.Produce(ctx, &kgo.Record{Topic: a.topic, Value: data}, nil)
+	a.producer.Produce(ctx, &kgo.Record{Topic: UserEventsTopic, Value: data}, nil)
+
+	return nil
+}
+
+func (a *FranzAdapter) SendUserUpdate(ctx context.Context, event *protobuf.UserEvent) error {
+	if a.producer == nil {
+		return nil
+	}
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		return &ErrProtoMarshal{err}
+	}
+
+	a.producer.Produce(ctx, &kgo.Record{Topic: UserUpdatesTopic, Value: data}, nil)
 
 	return nil
 }
@@ -120,7 +139,7 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 			if errors := fetches.Errors(); len(errors) > 0 {
 				for _, e := range errors {
 					if e.Err == context.Canceled {
-						a.logger.Info("received interrupt", slog.Any("err", e.Err))
+						a.logger.Error("received interrupt", slog.Any("err", e.Err))
 						return
 					}
 
@@ -146,7 +165,7 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 
 			if err := a.consumer.CommitUncommittedOffsets(ctx); err != nil {
 				if err == context.Canceled {
-					a.logger.Info("received interrupt", slog.Any("err", err))
+					a.logger.Error("received interrupt", slog.Any("err", err))
 					return
 				}
 

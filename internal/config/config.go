@@ -152,17 +152,47 @@ func WithConsumerName() ConfigOpt {
 	}
 }
 
+// WithGoogleClientID checks the env for GOOGLE_CLIENT_ID
+func WithGoogleClientID() ConfigOpt {
+	return func(c *Config) error {
+		id := os.Getenv("GOOGLE_CLIENT_ID")
+		if id == "" {
+			return &ErrMissingEnv{"GOOGLE_CLIENT_ID"}
+		}
+
+		c.GoogleClientID = id
+
+		return nil
+	}
+}
+
+// WithGoogleClientSecret checks the env for GOOGLE_CLIENT_SECRET
+func WithGoogleClientSecret() ConfigOpt {
+	return func(c *Config) error {
+		secret := os.Getenv("GOOGLE_CLIENT_SECRET")
+		if secret == "" {
+			return &ErrMissingEnv{"GOOGLE_CLIENT_SECRET"}
+		}
+
+		c.GoogleClientSecret = secret
+
+		return nil
+	}
+}
+
 type Config struct {
-	ListenerAddr string
-	Brokers      string
-	RedPandaUsr  string
-	RedPandaPass string
-	OtelService  string
-	OtelEndpoint string
-	ProfileURL   string
-	GrafanaUsr   string
-	GrafanaPass  string
-	ConsumerName string
+	ListenerAddr       string
+	Brokers            string
+	RedPandaUsr        string
+	RedPandaPass       string
+	OtelService        string
+	OtelEndpoint       string
+	ProfileURL         string
+	GrafanaUsr         string
+	GrafanaPass        string
+	ConsumerName       string
+	GoogleClientID     string
+	GoogleClientSecret string
 }
 
 func New(opts ...ConfigOpt) (*Config, error) {

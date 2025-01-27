@@ -110,7 +110,6 @@ func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Cli
 	for err := range errChan {
 		select {
 		case <-ctx.Done():
-			ngin.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 			return
 		default:
 			if err != nil {
