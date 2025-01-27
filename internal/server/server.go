@@ -96,7 +96,6 @@ func (gs *GameServer) listen(ctx context.Context) {
 			for err := range errChan {
 				select {
 				case <-ctx.Done():
-					gs.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 					return
 				default:
 					if err != nil {

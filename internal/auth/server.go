@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nxdir-s/idlerpg/internal/config"
 	"github.com/nxdir-s/idlerpg/internal/ports"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2"
 )
 
@@ -40,14 +42,14 @@ type Server struct {
 	google *oauth2.Config
 }
 
-func NewServer(ctx context.Context, adapter ports.AuthPort) (*Server, error) {
+func NewServer(ctx context.Context, cfg *config.Config, adapter ports.AuthPort) (*Server, error) {
 	s := &Server{
 		auth:   adapter,
-		google: googleConfig(),
+		google: googleConfig(cfg.GoogleClientID, cfg.GoogleClientSecret),
 	}
 
-	s.mux.HandleFunc("GET /auth/google/login", enableCORS(httpHandler(s.googleLogin)))
-	s.mux.HandleFunc("GET /auth/google/callback", enableCORS(httpHandler(s.googleCallback)))
+	s.mux.Handle("GET /auth/google/login", otelhttp.NewHandler(http.HandlerFunc(enableCORS(httpHandler(s.googleLogin))), "google.login"))
+	s.mux.Handle("GET /auth/google/callback", otelhttp.NewHandler(http.HandlerFunc(enableCORS(httpHandler(s.googleCallback))), "google.callback"))
 
 	return s, nil
 }

@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"os"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -17,11 +15,11 @@ type GoogleUserInfo struct {
 	Picture   string `json:"picture"`
 }
 
-func googleConfig() *oauth2.Config {
+func googleConfig(cId string, secret string) *oauth2.Config {
 	return &oauth2.Config{
 		RedirectURL:  RedirectURL,
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		ClientID:     cId,
+		ClientSecret: secret,
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",

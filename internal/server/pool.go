@@ -56,7 +56,6 @@ func (p *Pool) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			p.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 			return
 		case client := <-p.Register:
 			// using counter for testing
@@ -112,7 +111,6 @@ func (p *Pool) Start(ctx context.Context) {
 			for err := range errChan {
 				select {
 				case <-ctx.Done():
-					p.logger.Warn("context cancelled", slog.Any("err", ctx.Err()))
 					return
 				default:
 					if err != nil {

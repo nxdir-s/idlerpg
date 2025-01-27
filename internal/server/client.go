@@ -38,7 +38,6 @@ func (c *Client) ReadMessage(ctx context.Context, epoller *Epoll, logger *slog.L
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Warn("context cancelled while reading client message", slog.Any("err", ctx.Err()))
 			return nil
 		default:
 			header, err := ws.ReadHeader(c.Conn)
