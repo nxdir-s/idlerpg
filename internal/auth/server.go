@@ -48,8 +48,8 @@ func NewServer(ctx context.Context, cfg *config.Config, adapter ports.AuthPort) 
 		google: googleConfig(cfg.GoogleClientID, cfg.GoogleClientSecret),
 	}
 
-	s.mux.Handle("GET /auth/google/login", otelhttp.NewHandler(http.HandlerFunc(enableCORS(httpHandler(s.googleLogin))), "google.login"))
-	s.mux.Handle("GET /auth/google/callback", otelhttp.NewHandler(http.HandlerFunc(enableCORS(httpHandler(s.googleCallback))), "google.callback"))
+	s.mux.Handle("GET /auth/google/login", otelhttp.NewHandler(http.HandlerFunc(enableCORS(httpHandler(s.googleLogin))), "auth.google.login"))
+	s.mux.Handle("GET /auth/google/callback", otelhttp.NewHandler(http.HandlerFunc(enableCORS(httpHandler(s.googleCallback))), "auth.google.callback"))
 
 	return s, nil
 }
