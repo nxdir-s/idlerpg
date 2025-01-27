@@ -93,7 +93,7 @@ func main() {
 	logger.Info(fmt.Sprintf("listening on ws://%v", listener.Addr()))
 
 	var kafka ports.KafkaPort
-	kafka, err = secondary.NewFranzAdapter("user-events",
+	kafka, err = secondary.NewFranzAdapter(
 		logger,
 		otel.Tracer("kafka.franz"),
 		secondary.WithFranzProducer(
