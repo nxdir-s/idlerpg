@@ -109,6 +109,8 @@ github.com/nxdir-s/telemetry v1.0.3 h1:yHcVfGR83nLkqoXbVvmitO5weVdilzyl5hrTZFDsz
 github.com/nxdir-s/telemetry v1.0.3/go.mod h1:iu5IS7ppp1Yf/FiWEQMuv+XHur887CsV8OfiYsmuKGc=
 github.com/nxdir-s/telemetry v1.0.4 h1:MEpwq1PpmL9oMWxf1yoXWgpL+qLrHzIQNbATN09kkx0=
 github.com/nxdir-s/telemetry v1.0.4/go.mod h1:iu5IS7ppp1Yf/FiWEQMuv+XHur887CsV8OfiYsmuKGc=
+github.com/nxdir-s/telemetry v1.0.5 h1:VpHrYOHDoQJW/wy5I22tRzY/LjTCmisKwlIYPeSwpLI=
+github.com/nxdir-s/telemetry v1.0.5/go.mod h1:iu5IS7ppp1Yf/FiWEQMuv+XHur887CsV8OfiYsmuKGc=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
