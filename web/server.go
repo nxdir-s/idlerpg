@@ -72,15 +72,15 @@ func NewServer(ctx context.Context, logger *slog.Logger) (*Server, error) {
 		return nil, err
 	}
 
-	s.mux.Handle("/static/", otelhttp.NewHandler(http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))), "static"))
+	s.mux.Handle("/static/", otelhttp.NewHandler(http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))), "web.static"))
 
-	s.mux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleIndex)), "index"))
-	s.mux.Handle("/dashboard", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleDashboard)), "dashboard"))
-	s.mux.Handle("/tables", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleTables)), "tables"))
-	s.mux.Handle("/billing", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleBilling)), "billing"))
-	s.mux.Handle("/profile", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleProfile)), "profile"))
-	s.mux.Handle("/login", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleLogin)), "login"))
-	s.mux.Handle("/registration", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleRegistration)), "registration"))
+	s.mux.Handle("/", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleIndex)), "web.index"))
+	s.mux.Handle("/dashboard", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleDashboard)), "web.dashboard"))
+	s.mux.Handle("/tables", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleTables)), "web.tables"))
+	s.mux.Handle("/billing", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleBilling)), "web.billing"))
+	s.mux.Handle("/profile", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleProfile)), "web.profile"))
+	s.mux.Handle("/login", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleLogin)), "web.login"))
+	s.mux.Handle("/registration", otelhttp.NewHandler(http.HandlerFunc(httpHandler(s.handleRegistration)), "web.registration"))
 
 	return s, nil
 }
