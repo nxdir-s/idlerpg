@@ -13,7 +13,6 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary"
 	"github.com/nxdir-s/idlerpg/internal/config"
 	"github.com/nxdir-s/idlerpg/internal/engine"
-	"github.com/nxdir-s/idlerpg/internal/logs"
 	"github.com/nxdir-s/idlerpg/internal/observability"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/server"
@@ -25,7 +24,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	logger := slog.New(logs.NewHandler(slog.NewTextHandler(os.Stdout, nil)))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
 	var rLimit syscall.Rlimit
