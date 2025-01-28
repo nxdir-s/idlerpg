@@ -41,7 +41,6 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 		containerPort = jsii.Number(ServerPort)
 	}
 
-	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 	labels := map[string]*string{"name": id}
 
 	configMap := NewGSConfig(server, jsii.String(*id+"-cm"), &GSConfigProps{
@@ -187,7 +186,6 @@ func NewGameServer(scope constructs.Construct, id *string, props *GameServerProp
 	})
 
 	deployment.AddDependency(service)
-	deployment.AddDependency(props.Namespace)
 
 	return server
 }
@@ -208,7 +206,7 @@ func NewGSConfig(scope constructs.Construct, id *string, props *GSConfigProps) k
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
 			"OTEL_SERVICE_NAME":                  jsii.String("gameserver"),
-			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", *props.Port)),
+			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", int(*props.Port))),
 		},
 	})
 }

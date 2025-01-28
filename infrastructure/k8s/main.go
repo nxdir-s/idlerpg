@@ -1,10 +1,11 @@
 package main
 
 import (
+	"example.com/charts/consumers"
 	"example.com/charts/imports/k8s"
+	"example.com/charts/servers"
 	"example.com/charts/storage"
 
-	"example.com/charts/servers"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 	"github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
@@ -31,9 +32,15 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 		},
 	})
 
-	storage.NewPostgresCluster(chart, jsii.String("database"), &storage.PostgresProps{
+	storageChart := cdk8s.NewChart(scope, jsii.String(id+"-storage"), &cprops)
+	storageChart.AddDependency(namespaceChart)
+
+	storage.NewPostgresCluster(storageChart, jsii.String("database"), &storage.PostgresProps{
 		Namespace: namespace,
 	})
+
+	chart.AddDependency(namespaceChart)
+	chart.AddDependency(storageChart)
 
 	servers.NewGameServer(chart, jsii.String("gameserver"), &servers.GameServerProps{
 		Namespace: namespace,
@@ -45,9 +52,9 @@ func NewRpgChart(scope constructs.Construct, id string, props *RpgChartProps) cd
 		Image:     jsii.String("idlerpg/webserver:latest"),
 	})
 
-	servers.NewConsumer(chart, jsii.String("consumer"), &servers.ConsumerProps{
+	consumers.NewUserEvents(chart, jsii.String("userevents"), &consumers.UserEventsProps{
 		Namespace: namespace,
-		Image:     jsii.String("idlerpg/consumer:latest"),
+		Image:     jsii.String("idlerpg/userevents:latest"),
 	})
 
 	return chart

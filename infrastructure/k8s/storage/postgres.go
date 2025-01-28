@@ -18,7 +18,7 @@ type PostgresProps struct {
 	Replicas  *float64
 }
 
-func NewPostgresCluster(scope constructs.Construct, id *string, props *PostgresProps) constructs.Construct {
+func NewPostgresCluster(scope constructs.Construct, id *string, props *PostgresProps) cnpg.Cluster {
 	database := constructs.NewConstruct(scope, id)
 
 	replicas := props.Replicas
@@ -47,5 +47,5 @@ func NewPostgresCluster(scope constructs.Construct, id *string, props *PostgresP
 
 	cluster.AddDependency(props.Namespace)
 
-	return database
+	return cluster
 }
