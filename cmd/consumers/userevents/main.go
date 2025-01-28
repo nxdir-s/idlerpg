@@ -73,7 +73,7 @@ func main() {
 		logger,
 		otel.Tracer("kafka.franz"),
 		secondary.WithFranzConsumer(
-			"user-events",
+			"user.events",
 			cfg.ConsumerName,
 			strings.Split(cfg.Brokers, ","),
 			cfg.RedPandaUsr,
@@ -85,7 +85,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	consumer := consumers.NewEventsConsumer(kafka, logger)
+	consumer := consumers.NewUserEvents(kafka, logger)
 	defer consumer.Close()
 
 	go consumer.Start(ctx)
