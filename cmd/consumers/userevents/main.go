@@ -68,11 +68,25 @@ func main() {
 	}
 	defer profiler.Stop()
 
+	var pgxPool secondary.PgxPool
+	pgxPool, err = secondary.NewPgxPool(ctx, "dbUrl")
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	var database ports.DatabasePort
+	database, err = secondary.NewPostgresAdapter(pgxPool, logger, otel.Tracer("postgres"))
+	if err != nil {
+		logger.Error("failed to create postgres adapter", slog.Any("err", err))
+		os.Exit(1)
+	}
+
 	var kafka ports.KafkaPort
 	kafka, err = secondary.NewFranzAdapter(
 		logger,
 		otel.Tracer("kafka.franz"),
-		secondary.WithFranzConsumer(
+		secondary.WithConsumer(
 			"user.events",
 			cfg.ConsumerName,
 			strings.Split(cfg.Brokers, ","),
@@ -85,7 +99,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	consumer := consumers.NewUserEvents(kafka, logger)
+	consumer := consumers.NewUserEvents(kafka, database, logger)
 	defer consumer.Close()
 
 	go consumer.Start(ctx)

@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 	"log/slog"
 
+	"github.com/nxdir-s/idlerpg/internal/adapters/secondary/franz"
 	"github.com/nxdir-s/idlerpg/internal/util"
-	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const (
@@ -23,7 +24,7 @@ const (
 
 type FranzAdapterOpt func(a *FranzAdapter) error
 
-func WithFranzConsumer(topic string, groupname string, brokers []string, username string, pass string) FranzAdapterOpt {
+func WithConsumer(topic string, groupname string, brokers []string, username string, pass string) FranzAdapterOpt {
 	return func(a *FranzAdapter) error {
 		client, err := kgo.NewClient(
 			kgo.SeedBrokers(brokers...),
@@ -40,14 +41,14 @@ func WithFranzConsumer(topic string, groupname string, brokers []string, usernam
 		}
 
 		a.topic = topic
-		a.consumer = client
+		a.client = client
 		a.groupName = groupname
 
 		return nil
 	}
 }
 
-func WithFranzProducer(brokers []string, username string, pass string) FranzAdapterOpt {
+func WithProducer(brokers []string, username string, pass string) FranzAdapterOpt {
 	return func(a *FranzAdapter) error {
 		client, err := kgo.NewClient(
 			kgo.SeedBrokers(brokers...),
@@ -58,15 +59,14 @@ func WithFranzProducer(brokers []string, username string, pass string) FranzAdap
 			return err
 		}
 
-		a.producer = client
+		a.client = client
 
 		return nil
 	}
 }
 
 type FranzAdapter struct {
-	producer  *kgo.Client
-	consumer  *kgo.Client
+	client    *kgo.Client
 	logger    *slog.Logger
 	tracer    trace.Tracer
 	topic     string
@@ -88,76 +88,37 @@ func NewFranzAdapter(logger *slog.Logger, tracer trace.Tracer, opts ...FranzAdap
 	return adapter, nil
 }
 
-func (a *FranzAdapter) SendUserEvent(ctx context.Context, event *protobuf.UserEvent) error {
-	if a.producer == nil {
+func (a *FranzAdapter) Send(ctx context.Context, record protoreflect.ProtoMessage) error {
+	if a.client == nil {
 		return nil
 	}
 
-	ctx, span := a.tracer.Start(ctx, "send "+UserEventsTopic,
+	ctx, span := a.tracer.Start(ctx, "send "+a.topic,
 		trace.WithSpanKind(trace.SpanKindProducer),
 		trace.WithAttributes(
 			attribute.String("messaging.system", "kafka"),
-			attribute.String("messaging.destination.name", UserEventsTopic),
+			attribute.String("messaging.destination.name", a.topic),
 			attribute.String("messaging.operation.name", "send"),
 			attribute.String("messaging.operation.type", "send"),
 		),
 	)
 	defer span.End()
 
-	data, err := proto.Marshal(event)
+	data, err := proto.Marshal(record)
 	if err != nil {
 		err = &ErrProtoMarshal{err}
-		util.RecordError(span, "error encoding UserEvent", err)
+		util.RecordError(span, "error encoding "+a.topic+" record", err)
 
 		return err
 	}
 
-	a.producer.Produce(ctx, &kgo.Record{Topic: UserEventsTopic, Value: data}, nil)
+	a.client.Produce(ctx, &kgo.Record{Topic: a.topic, Value: data}, nil)
 
 	return nil
 }
 
-func (a *FranzAdapter) SendUserUpdate(ctx context.Context, update *protobuf.UserUpdate) error {
-	if a.producer == nil {
-		return nil
-	}
-
-	ctx, span := a.tracer.Start(ctx, "send "+UserUpdatesTopic,
-		trace.WithSpanKind(trace.SpanKindProducer),
-		trace.WithAttributes(
-			attribute.String("messaging.system", "kafka"),
-			attribute.String("messaging.destination.name", UserUpdatesTopic),
-			attribute.String("messaging.operation.name", "send"),
-			attribute.String("messaging.operation.type", "send"),
-		),
-	)
-	defer span.End()
-
-	data, err := proto.Marshal(update)
-	if err != nil {
-		err = &ErrProtoMarshal{err}
-		util.RecordError(span, "error encoding UserUpdate", err)
-
-		return err
-	}
-
-	a.producer.Produce(ctx, &kgo.Record{Topic: UserUpdatesTopic, Value: data}, nil)
-
-	return nil
-}
-
-func (a *FranzAdapter) CloseProducer() error {
-	if a.producer == nil {
-		return nil
-	}
-
-	a.producer.Close()
-
-	return nil
-}
-
-func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
-	if a.consumer == nil {
+func (a *FranzAdapter) Consume(ctx context.Context, consumer franz.Consumer) {
+	if a.client == nil {
 		return
 	}
 
@@ -166,7 +127,7 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			ctx, span := a.tracer.Start(ctx, "receive "+UserEventsTopic,
+			ctx, span := a.tracer.Start(ctx, "receive "+a.topic,
 				trace.WithSpanKind(trace.SpanKindClient),
 				trace.WithAttributes(
 					attribute.String("messaging.system", "kafka"),
@@ -176,10 +137,10 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 				),
 			)
 
-			fetches := a.consumer.PollRecords(ctx, MaxPollFetches)
+			fetches := a.client.PollRecords(ctx, MaxPollFetches)
 			span.End()
 
-			ctx, span = a.tracer.Start(ctx, "process "+UserEventsTopic,
+			ctx, span = a.tracer.Start(ctx, "process "+a.topic,
 				trace.WithSpanKind(trace.SpanKindConsumer),
 				trace.WithAttributes(
 					attribute.String("messaging.system", "kafka"),
@@ -208,23 +169,19 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 			for !iter.Done() {
 				record := iter.Next()
 
-				var msg protobuf.UserEvent
-				if err := proto.Unmarshal(record.Value, &msg); err != nil {
-					a.logger.Error("error decoding UserEvent", slog.Any("err", err))
+				if err := consumer.Process(ctx, record); err != nil {
+					a.logger.Error("error processing "+a.topic+" record", slog.Any("err", err))
 
-					util.RecordError(span, "error decoding UserEvent", err)
+					util.RecordError(span, "error processing "+a.topic+" record", err)
 					span.End()
 
-					continue
+					return // return or continue?
 				}
 
-				a.logger.Info("consumed message",
-					slog.String("action", msg.Action.String()),
-					slog.Int("exp", int(msg.Exp)),
-				)
+				a.logger.Info("consumed record", slog.String("topic", a.topic))
 			}
 
-			if err := a.consumer.CommitUncommittedOffsets(ctx); err != nil {
+			if err := a.client.CommitUncommittedOffsets(ctx); err != nil {
 				if err == context.Canceled {
 					a.logger.Error("received interrupt", slog.Any("err", err))
 
@@ -237,18 +194,18 @@ func (a *FranzAdapter) ConsumeUserEvents(ctx context.Context) {
 				a.logger.Error("unable to commit offsets", slog.Any("err", err))
 			}
 
-			a.consumer.AllowRebalance()
+			a.client.AllowRebalance()
 			span.End()
 		}
 	}
 }
 
-func (a *FranzAdapter) CloseConsumer() error {
-	if a.consumer == nil {
+func (a *FranzAdapter) Close() error {
+	if a.client == nil {
 		return nil
 	}
 
-	a.consumer.Close()
+	a.client.Close()
 
 	return nil
 }

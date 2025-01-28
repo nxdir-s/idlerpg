@@ -3,15 +3,14 @@ package ports
 import (
 	"context"
 
-	"github.com/nxdir-s/idlerpg/protobuf"
+	"github.com/nxdir-s/idlerpg/internal/adapters/secondary/franz"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type KafkaPort interface {
-	SendUserEvent(ctx context.Context, event *protobuf.UserEvent) error
-	SendUserUpdate(ctx context.Context, update *protobuf.UserUpdate) error
-	CloseProducer() error
-	ConsumeUserEvents(ctx context.Context)
-	CloseConsumer() error
+	Send(ctx context.Context, record protoreflect.ProtoMessage) error
+	Consume(ctx context.Context, consumer franz.Consumer)
+	Close() error
 }
 
 type DatabasePort interface {
