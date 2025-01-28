@@ -41,7 +41,6 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 		containerPort = jsii.Number(WebServerPort)
 	}
 
-	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 	labels := map[string]*string{"name": id}
 
 	configMap := NewWSConfig(server, jsii.String(*id+"-cm"), &WSConfigProps{
@@ -160,7 +159,6 @@ func NewWebServer(scope constructs.Construct, id *string, props *WebServerProps)
 	})
 
 	deployment.AddDependency(service)
-	deployment.AddDependency(props.Namespace)
 
 	return server
 }
@@ -181,7 +179,7 @@ func NewWSConfig(scope constructs.Construct, id *string, props *WSConfigProps) k
 			"OTEL_SERVICE_NAME":                  jsii.String("webserver"),
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
-			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", *props.Port)),
+			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", int(*props.Port))),
 		},
 	})
 }

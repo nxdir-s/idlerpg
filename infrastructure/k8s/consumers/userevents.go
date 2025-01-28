@@ -1,42 +1,44 @@
-package servers
+package consumers
 
 import (
+	"fmt"
+
 	"example.com/charts/imports/k8s"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
 
 const (
-	ConsumerImage    string = "idlerpg/consumer:latest"
-	ConsumerPort     int    = 5000
-	ConsumerReplicas int    = 1
+	UserEventsImage    string = "idlerpg/userevents:latest"
+	UserEventsPort     int    = 5000
+	UserEventsReplicas int    = 1
 )
 
-type ConsumerProps struct {
+type UserEventsProps struct {
 	Namespace k8s.KubeNamespace
 	Image     *string
 	Replicas  *float64
 	Port      *float64
 }
 
-func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) constructs.Construct {
+func NewUserEvents(scope constructs.Construct, id *string, props *UserEventsProps) constructs.Construct {
 	server := constructs.NewConstruct(scope, id)
 
 	replicas := props.Replicas
 	if replicas == nil {
-		replicas = jsii.Number(ConsumerReplicas)
+		replicas = jsii.Number(UserEventsReplicas)
 	}
 
 	port := props.Port
 	if port == nil {
-		port = jsii.Number(ConsumerPort)
+		port = jsii.Number(UserEventsPort)
 	}
 
-	// label := map[string]*string{"app": cdk8s.Names_ToLabelValue(server, nil)}
 	labels := map[string]*string{"name": id}
 
-	configMap := NewConsumerCfg(server, jsii.String(*id+"-cm"), &ConsumerCfgProps{
+	configMap := NewUserEventsCfg(server, jsii.String(*id+"-cm"), &UserEventsCfgProps{
 		Namespace: props.Namespace,
+		Port:      port,
 	})
 
 	service := k8s.NewKubeService(server, jsii.String(*id+"-srv"), &k8s.KubeServiceProps{
@@ -92,7 +94,7 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 					RestartPolicy:      jsii.String("Always"),
 					Containers: &[]*k8s.Container{
 						{
-							Image:           jsii.String(ConsumerImage),
+							Image:           jsii.String(UserEventsImage),
 							ImagePullPolicy: jsii.String("Always"),
 							Name:            id,
 							Ports: &[]*k8s.ContainerPort{
@@ -177,17 +179,16 @@ func NewConsumer(scope constructs.Construct, id *string, props *ConsumerProps) c
 	})
 
 	deployment.AddDependency(service)
-	deployment.AddDependency(props.Namespace)
 
 	return server
 }
 
-type ConsumerCfgProps struct {
+type UserEventsCfgProps struct {
 	Namespace k8s.KubeNamespace
 	Port      *float64
 }
 
-func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgProps) k8s.KubeConfigMap {
+func NewUserEventsCfg(scope constructs.Construct, id *string, props *UserEventsCfgProps) k8s.KubeConfigMap {
 	return k8s.NewKubeConfigMap(scope, id, &k8s.KubeConfigMapProps{
 		Metadata: &k8s.ObjectMeta{
 			Name:      id,
@@ -197,8 +198,9 @@ func NewConsumerCfg(scope constructs.Construct, id *string, props *ConsumerCfgPr
 		Data: &map[string]*string{
 			"OTEL_EXPORTER_OTLP_TRACES_INSECURE": jsii.String("true"),
 			"OTEL_EXPORTER_OTLP_ENDPOINT":        jsii.String("grafana-k8s-monitoring-alloy.default.svc.cluster.local:4317"),
-			"OTEL_SERVICE_NAME":                  jsii.String("consumer"),
-			"CONSUMER_GROUP_NAME":                jsii.String("consumer-dev"),
+			"OTEL_SERVICE_NAME":                  jsii.String("consumers.userevents"),
+			"CONSUMER_GROUP_NAME":                jsii.String("userevents.dev"),
+			"LISTENER_ADDRESS":                   jsii.String(fmt.Sprintf("0.0.0.0:%d", int(*props.Port))),
 		},
 	})
 }
