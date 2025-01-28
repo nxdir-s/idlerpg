@@ -13,6 +13,7 @@ import (
 	"github.com/nxdir-s/idlerpg/protobuf"
 	"github.com/nxdir-s/pipelines"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const (
@@ -104,7 +105,7 @@ func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Cli
 	fanOutChannels := pipelines.FanOut(ctx, stream, ngin.Simulate, SimulateMaxFan)
 	playerEvents := pipelines.FanIn(ctx, fanOutChannels...)
 
-	kafkaFanOut := pipelines.FanOut(ctx, playerEvents, ngin.kafka.SendUserEvent, KafkaMaxFan)
+	kafkaFanOut := pipelines.FanOut(ctx, playerEvents, ngin.kafka.Send, KafkaMaxFan)
 	errChan := pipelines.FanIn(ctx, kafkaFanOut...)
 
 	for err := range errChan {
@@ -121,7 +122,7 @@ func (ngin *GameEngine) process(ctx context.Context, users map[int32]*server.Cli
 }
 
 // Simulate simulates player actions
-func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) *protobuf.UserEvent {
+func (ngin *GameEngine) Simulate(ctx context.Context, client *server.Client) protoreflect.ProtoMessage {
 	return &protobuf.UserEvent{
 		Id:     client.User.Id,
 		Action: protobuf.Action(client.User.State.Action),

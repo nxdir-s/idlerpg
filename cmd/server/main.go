@@ -96,7 +96,7 @@ func main() {
 	kafka, err = secondary.NewFranzAdapter(
 		logger,
 		otel.Tracer("kafka.franz"),
-		secondary.WithFranzProducer(
+		secondary.WithProducer(
 			strings.Split(cfg.Brokers, ","),
 			cfg.RedPandaUsr,
 			cfg.RedPandaPass,
@@ -106,7 +106,7 @@ func main() {
 		logger.Error("failed to create kafka adapter", slog.Any("err", err))
 		os.Exit(1)
 	}
-	defer kafka.CloseProducer()
+	defer kafka.Close()
 
 	pool := server.NewPool(ctx, logger, otel.Tracer("server.pool"))
 	ngin := engine.NewGameEngine(pool, kafka, logger, otel.Tracer("engine"))
