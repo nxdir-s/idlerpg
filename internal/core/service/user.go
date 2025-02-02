@@ -9,18 +9,18 @@ import (
 
 type UserServiceOpt func(s *UserService)
 
-func WithUserTx(tx ports.DatabaseTxPort) UserServiceOpt {
+func WithUserTx(tx ports.DatabaseTx) UserServiceOpt {
 	return func(s *UserService) {
 		s.tx = tx
 	}
 }
 
 type UserService struct {
-	db ports.DatabasePort
-	tx ports.DatabaseTxPort
+	db ports.Database
+	tx ports.DatabaseTx
 }
 
-func NewUserService(ctx context.Context, database ports.DatabasePort, opts ...UserServiceOpt) (*UserService, error) {
+func NewUserService(ctx context.Context, database ports.Database, opts ...UserServiceOpt) (*UserService, error) {
 	service := &UserService{
 		db: database,
 	}
@@ -32,7 +32,7 @@ func NewUserService(ctx context.Context, database ports.DatabasePort, opts ...Us
 	return service, nil
 }
 
-func (s *UserService) NewUserTxService(ctx context.Context) (ports.UserTxServicePort, error) {
+func (s *UserService) NewUserTxService(ctx context.Context) (ports.UserTxService, error) {
 	txAdapter, err := s.db.NewTransactionAdapter(ctx)
 	if err != nil {
 		return nil, err
@@ -56,6 +56,10 @@ func (s *UserService) Rollback(ctx context.Context) error {
 
 func (s *UserService) GetUser(ctx context.Context, id int) (*entity.User, error) {
 	return s.db.GetUser(ctx, id)
+}
+
+func (s *UserService) GetCharacter(ctx context.Context, id int) (*entity.Character, error) {
+	return s.db.GetCharacter(ctx, id)
 }
 
 func (s *UserService) GetUserID(ctx context.Context, email string) (int, error) {

@@ -200,6 +200,34 @@ const RemoveUserQuery string = `
     WHERE id = @id
 `
 
+func (a *PostgresAdapter) GetCharacter(ctx context.Context, userId int) (*entity.Character, error) {
+	ctx, span := a.tracer.Start(ctx, "get.character",
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"userId": userId,
+	}
+
+	var id int
+	err := a.conn.QueryRow(ctx, GetCharacterQuery, args).Scan(&id)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		err = &ErrQueryRow{err}
+		util.RecordError(span, "get.character failed", err)
+
+		return nil, err
+	}
+
+	return &entity.Character{}, nil
+}
+
+const GetCharacterQuery string = `
+    SELECT *
+    FROM characters
+    WHERE user_id = @userId
+`
+
 func (a *PostgresAdapter) GetUser(ctx context.Context, id int) (*entity.User, error) {
 	ctx, span := a.tracer.Start(ctx, "get.user",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
@@ -211,10 +239,10 @@ func (a *PostgresAdapter) GetUser(ctx context.Context, id int) (*entity.User, er
 	}
 
 	var userId int
-	err := a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
+	err := a.conn.QueryRow(ctx, GetUserQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, "get.user.id failed", err)
+		util.RecordError(span, "get.user failed", err)
 
 		return nil, err
 	}

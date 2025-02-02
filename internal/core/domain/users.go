@@ -21,11 +21,11 @@ type Users struct {
 	jwt     ports.JWT
 }
 
-func NewUsers(ctx context.Context, service ports.UserService, jwt ports.JWT) (*Users, error) {
+func NewUsers(service ports.UserService, jwt ports.JWT) *Users {
 	return &Users{
 		service: service,
 		jwt:     jwt,
-	}, nil
+	}
 }
 
 func (d *Users) GetUser(ctx context.Context, id int) (*entity.User, error) {
