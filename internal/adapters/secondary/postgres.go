@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/util"
 	"go.opentelemetry.io/otel/trace"
@@ -105,7 +106,7 @@ func NewPostgresAdapter(pool PgxPool, logger *slog.Logger, tracer trace.Tracer, 
 }
 
 // NewTransactionAdapter creates a postgres adapter for executing transactions
-func (a *PostgresAdapter) NewTransactionAdapter(ctx context.Context) (ports.DatabaseTxPort, error) {
+func (a *PostgresAdapter) NewTransactionAdapter(ctx context.Context) (ports.DatabaseTx, error) {
 	tx, err := a.conn.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -196,6 +197,34 @@ func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
 
 const RemoveUserQuery string = `
     DELETE FROM users
+    WHERE id = @id
+`
+
+func (a *PostgresAdapter) GetUser(ctx context.Context, id int) (*entity.User, error) {
+	ctx, span := a.tracer.Start(ctx, "get.user",
+		trace.WithLinks(trace.LinkFromContext(ctx)),
+	)
+	defer span.End()
+
+	args := pgx.NamedArgs{
+		"id": id,
+	}
+
+	var userId int
+	err := a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		err = &ErrQueryRow{err}
+		util.RecordError(span, "get.user.id failed", err)
+
+		return nil, err
+	}
+
+	return &entity.User{}, nil
+}
+
+const GetUserQuery string = `
+    SELECT *
+    FROM users
     WHERE id = @id
 `
 

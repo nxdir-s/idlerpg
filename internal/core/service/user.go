@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 )
 
@@ -51,6 +52,10 @@ func (s *UserService) Commit(ctx context.Context) error {
 
 func (s *UserService) Rollback(ctx context.Context) error {
 	return s.tx.Rollback(ctx)
+}
+
+func (s *UserService) GetUser(ctx context.Context, id int) (*entity.User, error) {
+	return s.db.GetUser(ctx, id)
 }
 
 func (s *UserService) GetUserID(ctx context.Context, email string) (int, error) {

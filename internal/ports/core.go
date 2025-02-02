@@ -4,24 +4,35 @@ import (
 	"context"
 	"time"
 
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
 	"github.com/nxdir-s/idlerpg/internal/core/valobj"
+	"github.com/nxdir-s/idlerpg/protobuf"
 )
 
-type UsersPort interface{}
+type Events interface {
+	HandleUserEvent(ctx context.Context, event *protobuf.UserEvent) error
+}
 
-type UserServicePort interface {
+type Users interface {
+	GetUser(ctx context.Context, id int) (*entity.User, error)
+	Login(ctx context.Context, email string) (*valobj.Token, error)
+	Register(ctx context.Context, email string) (*valobj.Token, error)
+}
+
+type UserService interface {
+	GetUser(ctx context.Context, id int) (*entity.User, error)
 	GetUserID(ctx context.Context, email string) (int, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
 	CreateUser(ctx context.Context, email string) (int, error)
 }
 
-type UserTxServicePort interface {
-	UserServicePort
+type UserTxService interface {
+	UserService
 	Commit(ctx context.Context) error
 	Rollback(ctx context.Context) error
 }
 
-type JWTPort interface {
+type JWT interface {
 	IssueToken(ctx context.Context, id int, email string) (*valobj.Token, error)
 	IssueAccessToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)
 	IssueRefreshToken(ctx context.Context, userId int, email string, expires time.Time) (string, error)

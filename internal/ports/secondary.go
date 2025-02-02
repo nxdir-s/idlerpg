@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/nxdir-s/idlerpg/internal/adapters/secondary/franz"
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -13,18 +14,19 @@ type KafkaPort interface {
 	Close() error
 }
 
-type DatabasePort interface {
-	NewTransactionAdapter(ctx context.Context) (DatabaseTxPort, error)
+type Database interface {
+	NewTransactionAdapter(ctx context.Context) (DatabaseTx, error)
 	CreateUser(ctx context.Context, email string) (int, error)
 	RemoveUser(ctx context.Context, id int) error
+	GetUser(ctx context.Context, id int) (*entity.User, error)
 	GetUserID(ctx context.Context, email string) (int, error)
 	UserExists(ctx context.Context, id int) (bool, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
 	UpdateRefreshToken(ctx context.Context, id int, token string) error
 }
 
-type DatabaseTxPort interface {
-	DatabasePort
+type DatabaseTx interface {
+	Database
 	Commit(ctx context.Context) error
 	Rollback(ctx context.Context) error
 }
