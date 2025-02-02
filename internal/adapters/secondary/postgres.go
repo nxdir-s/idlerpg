@@ -12,6 +12,7 @@ import (
 	"github.com/nxdir-s/idlerpg/internal/core/entity"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 	"github.com/nxdir-s/idlerpg/internal/util"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -140,8 +141,17 @@ func (a *PostgresAdapter) Rollback(ctx context.Context) error {
 
 // CreateUser creates a new user and returns the user's id
 func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, error) {
-	ctx, span := a.tracer.Start(ctx, "create.user",
+	ctx, span := a.tracer.Start(ctx, "INSERT user",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "INSERT"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "INSERT users"),
+			attribute.String("db.query.text", CreateUserQuery),
+		),
 	)
 	defer span.End()
 
@@ -153,7 +163,7 @@ func (a *PostgresAdapter) CreateUser(ctx context.Context, email string) (int, er
 	err := a.conn.QueryRow(ctx, CreateUserQuery, args).Scan(&userId)
 	if err != nil {
 		err = &ErrExecQuery{err}
-		util.RecordError(span, "create.user failed", err)
+		util.RecordError(span, "INSERT user failed", err)
 
 		return 0, err
 	}
@@ -171,8 +181,17 @@ const CreateUserQuery string = `
 
 // RemoveUser deletes a user using the supplied id
 func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
-	ctx, span := a.tracer.Start(ctx, "remove.user",
+	ctx, span := a.tracer.Start(ctx, "DELETE user",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "DELETE"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "DELETE users"),
+			attribute.String("db.query.text", RemoveUserQuery),
+		),
 	)
 	defer span.End()
 
@@ -183,7 +202,7 @@ func (a *PostgresAdapter) RemoveUser(ctx context.Context, id int) error {
 	resp, err := a.conn.Exec(ctx, RemoveUserQuery, args)
 	if err != nil {
 		err = &ErrExecQuery{err}
-		util.RecordError(span, "remove.user failed", err)
+		util.RecordError(span, "DELETE user failed", err)
 
 		return err
 	}
@@ -201,8 +220,17 @@ const RemoveUserQuery string = `
 `
 
 func (a *PostgresAdapter) GetCharacter(ctx context.Context, userId int) (*entity.Character, error) {
-	ctx, span := a.tracer.Start(ctx, "get.character",
+	ctx, span := a.tracer.Start(ctx, "SELECT character",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "SELECT"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "characters"),
+			attribute.String("db.query.summary", "SELECT characters"),
+			attribute.String("db.query.text", GetCharacterQuery),
+		),
 	)
 	defer span.End()
 
@@ -214,7 +242,7 @@ func (a *PostgresAdapter) GetCharacter(ctx context.Context, userId int) (*entity
 	err := a.conn.QueryRow(ctx, GetCharacterQuery, args).Scan(&id)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, "get.character failed", err)
+		util.RecordError(span, "SELECT character failed", err)
 
 		return nil, err
 	}
@@ -229,8 +257,17 @@ const GetCharacterQuery string = `
 `
 
 func (a *PostgresAdapter) GetUser(ctx context.Context, id int) (*entity.User, error) {
-	ctx, span := a.tracer.Start(ctx, "get.user",
+	ctx, span := a.tracer.Start(ctx, "SELECT user",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "SELECT"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "SELECT users"),
+			attribute.String("db.query.text", GetUserQuery),
+		),
 	)
 	defer span.End()
 
@@ -242,7 +279,7 @@ func (a *PostgresAdapter) GetUser(ctx context.Context, id int) (*entity.User, er
 	err := a.conn.QueryRow(ctx, GetUserQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, "get.user failed", err)
+		util.RecordError(span, "SELECT user failed", err)
 
 		return nil, err
 	}
@@ -257,8 +294,17 @@ const GetUserQuery string = `
 `
 
 func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, error) {
-	ctx, span := a.tracer.Start(ctx, "get.user.id",
+	ctx, span := a.tracer.Start(ctx, "SELECT user.id",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "SELECT"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "SELECT users by email"),
+			attribute.String("db.query.text", UserIdQuery),
+		),
 	)
 	defer span.End()
 
@@ -270,7 +316,7 @@ func (a *PostgresAdapter) GetUserID(ctx context.Context, email string) (int, err
 	err := a.conn.QueryRow(ctx, UserIdQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, "get.user.id failed", err)
+		util.RecordError(span, "SELECT user.id failed", err)
 
 		return 0, err
 	}
@@ -289,8 +335,17 @@ const UserIdQuery string = `
 `
 
 func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) {
-	ctx, span := a.tracer.Start(ctx, "user.exists",
+	ctx, span := a.tracer.Start(ctx, "SELECT user.id",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "SELECT"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "SELECT users by id"),
+			attribute.String("db.query.text", UserExistsQuery),
+		),
 	)
 	defer span.End()
 
@@ -302,7 +357,7 @@ func (a *PostgresAdapter) UserExists(ctx context.Context, id int) (bool, error) 
 	err := a.conn.QueryRow(ctx, UserExistsQuery, args).Scan(&userId)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, "user.exists failed", err)
+		util.RecordError(span, "SELECT user.id failed", err)
 
 		return false, err
 	}
@@ -321,8 +376,17 @@ const UserExistsQuery string = `
 `
 
 func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, error) {
-	ctx, span := a.tracer.Start(ctx, "email.exists",
+	ctx, span := a.tracer.Start(ctx, "SELECT user.email",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "SELECT"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "SELECT users by email"),
+			attribute.String("db.query.text", EmailExistsQuery),
+		),
 	)
 	defer span.End()
 
@@ -334,7 +398,7 @@ func (a *PostgresAdapter) EmailExists(ctx context.Context, email string) (bool, 
 	err := a.conn.QueryRow(ctx, EmailExistsQuery, args).Scan(&userEmail)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		err = &ErrQueryRow{err}
-		util.RecordError(span, "email.exists failed", err)
+		util.RecordError(span, "SELECT user.email failed", err)
 
 		return false, err
 	}
@@ -353,8 +417,17 @@ const EmailExistsQuery string = `
 `
 
 func (a *PostgresAdapter) UpdateRefreshToken(ctx context.Context, id int, token string) error {
-	ctx, span := a.tracer.Start(ctx, "update.refresh.token",
+	ctx, span := a.tracer.Start(ctx, "UPDATE user.refresh_token",
 		trace.WithLinks(trace.LinkFromContext(ctx)),
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("db.system.name", "postgresql"),
+			attribute.String("db.operation.name", "UPDATE"),
+			attribute.String("db.namespace", "postgres.public"),
+			attribute.String("db.collection.name", "users"),
+			attribute.String("db.query.summary", "UPDATE users"),
+			attribute.String("db.query.text", UpdateRefreshTokenQuery),
+		),
 	)
 	defer span.End()
 
@@ -366,7 +439,7 @@ func (a *PostgresAdapter) UpdateRefreshToken(ctx context.Context, id int, token 
 	resp, err := a.conn.Exec(ctx, UpdateRefreshTokenQuery, args)
 	if err != nil {
 		err = &ErrExecQuery{err}
-		util.RecordError(span, "update.refresh.token failed", err)
+		util.RecordError(span, "UPDATE user.refresh_token failed", err)
 
 		return err
 	}
