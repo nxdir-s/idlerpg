@@ -1,4 +1,4 @@
-package characters
+package users
 
 type Action uint8
 
@@ -9,6 +9,6 @@ const (
 	Gather
 )
 
-func NewAction(action int) Action {
-	return Action(action)
+type State struct {
+	Action Action
 }

@@ -19,6 +19,7 @@ type Database interface {
 	CreateUser(ctx context.Context, email string) (int, error)
 	RemoveUser(ctx context.Context, id int) error
 	GetUser(ctx context.Context, id int) (*entity.User, error)
+	GetCharacter(ctx context.Context, userId int) (*entity.Character, error)
 	GetUserID(ctx context.Context, email string) (int, error)
 	UserExists(ctx context.Context, id int) (bool, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
