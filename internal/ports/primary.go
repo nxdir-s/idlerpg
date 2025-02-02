@@ -1,7 +1,15 @@
 package ports
 
-import "context"
+import (
+	"context"
 
-type AuthPort interface {
+	"github.com/nxdir-s/idlerpg/protobuf"
+)
+
+type Auth interface {
 	ValidateToken(ctx context.Context, token string, tokenType string) error
+}
+
+type Consumer interface {
+	ProcessUserEvent(ctx context.Context, event *protobuf.UserEvent) error
 }

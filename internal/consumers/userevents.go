@@ -11,16 +11,16 @@ import (
 )
 
 type UserEvents struct {
-	kafka    ports.KafkaPort
-	database ports.DatabasePort
-	logger   *slog.Logger
+	kafka   ports.KafkaPort
+	adapter ports.ConsumerPort
+	logger  *slog.Logger
 }
 
-func NewUserEvents(kafka ports.KafkaPort, db ports.DatabasePort, logger *slog.Logger) *UserEvents {
+func NewUserEvents(kafka ports.KafkaPort, adapter ports.ConsumerPort, logger *slog.Logger) *UserEvents {
 	return &UserEvents{
-		kafka:    kafka,
-		database: db,
-		logger:   logger,
+		kafka:   kafka,
+		adapter: adapter,
+		logger:  logger,
 	}
 }
 
@@ -31,12 +31,12 @@ func (c *UserEvents) Start(ctx context.Context) {
 }
 
 func (c *UserEvents) Process(ctx context.Context, record *kgo.Record) error {
-	var msg protobuf.UserEvent
-	if err := proto.Unmarshal(record.Value, &msg); err != nil {
+	var event protobuf.UserEvent
+	if err := proto.Unmarshal(record.Value, &event); err != nil {
 		return err
 	}
 
-	return nil
+	return c.adapter.ProcessUserEvent(ctx, &event)
 }
 
 func (c *UserEvents) Close() {

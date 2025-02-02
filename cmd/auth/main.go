@@ -83,17 +83,17 @@ func main() {
 	logger.Info(fmt.Sprintf("listening on %v", listener.Addr()))
 
 	// secondary adapters
-	var database ports.DatabasePort
+	var database ports.Database
 
 	// services
-	var userService ports.UserServicePort
+	var userService ports.UserService
 
 	// domains
-	var users ports.UsersPort
-	var jwt ports.JWTPort
+	var users ports.Users
+	var jwt ports.JWT
 
 	// primary adapters
-	var authAdapter ports.AuthPort
+	var authAdapter ports.Auth
 
 	var pgxPool secondary.PgxPool
 	pgxPool, err = secondary.NewPgxPool(ctx, "dbUrl")

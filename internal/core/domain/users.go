@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 
+	"github.com/nxdir-s/idlerpg/internal/core/entity"
 	"github.com/nxdir-s/idlerpg/internal/core/valobj"
 	"github.com/nxdir-s/idlerpg/internal/ports"
 )
@@ -16,15 +17,19 @@ func (e *ErrUserExists) Error() string {
 }
 
 type Users struct {
-	service ports.UserServicePort
-	jwt     ports.JWTPort
+	service ports.UserService
+	jwt     ports.JWT
 }
 
-func NewUsers(ctx context.Context, service ports.UserServicePort, jwt ports.JWTPort) (*Users, error) {
+func NewUsers(ctx context.Context, service ports.UserService, jwt ports.JWT) (*Users, error) {
 	return &Users{
 		service: service,
 		jwt:     jwt,
 	}, nil
+}
+
+func (d *Users) GetUser(ctx context.Context, id int) (*entity.User, error) {
+	return d.service.GetUser(ctx, id)
 }
 
 func (d *Users) Login(ctx context.Context, email string) (*valobj.Token, error) {
