@@ -37,12 +37,12 @@ func (e *ErrInvalidState) Error() string {
 }
 
 type Server struct {
-	auth   ports.AuthPort
+	auth   ports.Auth
 	mux    http.ServeMux
 	google *oauth2.Config
 }
 
-func NewServer(ctx context.Context, cfg *config.Config, adapter ports.AuthPort) (*Server, error) {
+func NewServer(ctx context.Context, cfg *config.Config, adapter ports.Auth) (*Server, error) {
 	s := &Server{
 		auth:   adapter,
 		google: googleConfig(cfg.GoogleClientID, cfg.GoogleClientSecret),

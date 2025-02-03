@@ -39,13 +39,13 @@ func enableCORS(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func NewAuthHandler(adapter ports.AuthPort) func(http.Handler) http.Handler {
+func NewAuthHandler(adapter ports.Auth) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return authHandler(adapter, h)
 	}
 }
 
-func authHandler(adapter ports.AuthPort, next http.Handler) http.Handler {
+func authHandler(adapter ports.Auth, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if auth == "" {

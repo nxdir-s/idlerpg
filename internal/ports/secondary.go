@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type KafkaPort interface {
+type Kafka interface {
 	Send(ctx context.Context, record protoreflect.ProtoMessage) error
 	Consume(ctx context.Context, consumer franz.Consumer)
 	Close() error

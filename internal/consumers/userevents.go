@@ -11,12 +11,12 @@ import (
 )
 
 type UserEvents struct {
-	kafka   ports.KafkaPort
-	adapter ports.ConsumerPort
+	kafka   ports.Kafka
+	adapter ports.Consumer
 	logger  *slog.Logger
 }
 
-func NewUserEvents(kafka ports.KafkaPort, adapter ports.ConsumerPort, logger *slog.Logger) *UserEvents {
+func NewUserEvents(kafka ports.Kafka, adapter ports.Consumer, logger *slog.Logger) *UserEvents {
 	return &UserEvents{
 		kafka:   kafka,
 		adapter: adapter,

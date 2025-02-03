@@ -26,7 +26,7 @@ const (
 )
 
 type GameEngine struct {
-	kafka    ports.KafkaPort
+	kafka    ports.Kafka
 	pool     *server.Pool
 	ticker   *time.Ticker
 	sigusr1  chan os.Signal
@@ -36,7 +36,7 @@ type GameEngine struct {
 }
 
 // NewGameEngine creates a GameEngine
-func NewGameEngine(pool *server.Pool, kafka ports.KafkaPort, logger *slog.Logger, tracer trace.Tracer) *GameEngine {
+func NewGameEngine(pool *server.Pool, kafka ports.Kafka, logger *slog.Logger, tracer trace.Tracer) *GameEngine {
 	return &GameEngine{
 		kafka:   kafka,
 		pool:    pool,
